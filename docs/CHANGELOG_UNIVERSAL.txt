@@ -1,0 +1,170 @@
+═══════════════════════════════════════════════════════════════
+  SCRIPT COPIER UNIVERSAL - CHANGELOG v4.0
+═══════════════════════════════════════════════════════════════
+
+🎉 NOVIDADES DA VERSÃO UNIVERSAL
+Data: 2025-10-29
+Desenvolvido por: Nardoto (com assistência de Claude Code)
+
+───────────────────────────────────────────────────────────────
+📋 O QUE FOI MODIFICADO
+───────────────────────────────────────────────────────────────
+
+✅ 1. BOTÃO DE SELEÇÃO DE PASTA NO TOPO
+   - Botão grande e destacado "📁 SELECIONAR PASTA RAIZ DO PROJETO"
+   - Posicionado no topo da janela para fácil acesso
+   - Cor azul (#2196F3) para máxima visibilidade
+   - Permite selecionar QUALQUER pasta de projeto
+
+✅ 2. FUNCIONALIDADE UNIVERSAL
+   - Não está mais limitado à pasta "ROTEIROS_GERADOS"
+   - Funciona com QUALQUER estrutura de pastas que contenha:
+     • Subpastas com arquivos .txt
+     • Opcionalmente: video_status.json para indicadores
+
+✅ 3. VISUALIZADOR DE ARQUIVOS ATUALIZADO
+   - A aba "📂 Visualizar Arquivos" agora mostra TODOS os .txt
+   - Não está mais limitado a arquivos específicos
+   - Lê qualquer arquivo de texto da pasta selecionada
+
+✅ 4. CRÉDITOS ADICIONADOS
+   - Rodapé com "💻 Desenvolvido por Nardoto"
+   - Título da janela: "Script Copier Universal - By Nardoto"
+
+───────────────────────────────────────────────────────────────
+🔧 O QUE FOI PRESERVADO
+───────────────────────────────────────────────────────────────
+
+✅ Todas as funções de cópia de seções (Aba 1)
+✅ Divisão automática de seções por OPENING, ACT, CHAPTER, etc.
+✅ Histórico de cópias com indicadores visuais (✓)
+✅ Contagem de palavras e caracteres
+✅ Aba de Título e Descrição (Aba 3)
+   - 5 opções de título com botão de cópia individual
+   - Descrição para YouTube
+   - Ideia para thumbnail
+   - Status de produção (Gravado/Postado)
+✅ Visualizador de estrutura com árvore navegável
+✅ Todos os ícones de status (⚪ Novo, 🎬 Gravado, ✅ Postado)
+
+───────────────────────────────────────────────────────────────
+📁 ESTRUTURA DE PASTAS RECOMENDADA
+───────────────────────────────────────────────────────────────
+
+Qualquer pasta que siga este padrão funcionará:
+
+PASTA_RAIZ_PROJETO/
+│
+├── ROTEIRO_1/
+│   ├── 02_Texto_Narrado.txt (ou qualquer .txt)
+│   ├── 05_Titulo_Descricao.txt (opcional)
+│   └── video_status.json (opcional)
+│
+├── ROTEIRO_2/
+│   └── arquivo.txt
+│
+└── ROTEIRO_3/
+    └── qualquer_nome.txt
+
+───────────────────────────────────────────────────────────────
+🚀 COMO USAR O NOVO EXECUTÁVEL
+───────────────────────────────────────────────────────────────
+
+1. Execute: dist\ScriptCopier.exe
+
+2. Clique no botão azul "📁 SELECIONAR PASTA RAIZ DO PROJETO"
+
+3. Navegue até a pasta que contém suas subpastas de roteiros
+
+4. O aplicativo irá:
+   ✓ Listar todas as subpastas que têm arquivos .txt
+   ✓ Mostrar indicadores de status (se houver video_status.json)
+   ✓ Carregar os roteiros para uso
+
+5. Selecione um roteiro no dropdown e use as 3 abas:
+
+   📋 ABA 1 - COPIAR SEÇÕES:
+   - Clique nas seções para visualizar
+   - Botão "COPIAR TEXTO" copia para área de transferência
+   - Indicadores visuais mostram o que já foi copiado
+
+   📂 ABA 2 - VISUALIZAR ARQUIVOS:
+   - Dropdown mostra TODOS os arquivos .txt da pasta
+   - Navegação por estrutura (Atos, Capítulos, etc.)
+   - Copiar conteúdo direto da visualização
+
+   🎬 ABA 3 - TÍTULO E DESCRIÇÃO:
+   - 5 opções de título (copie individualmente)
+   - Descrição para YouTube
+   - Ideia para thumbnail
+   - Marcar status (Gravado/Postado)
+
+───────────────────────────────────────────────────────────────
+📦 ARQUIVOS GERADOS
+───────────────────────────────────────────────────────────────
+
+dist/
+├── ScriptCopier.exe          (Executável principal - ~11 MB)
+└── script_copier_icon.ico    (Ícone, opcional)
+
+Para distribuir:
+- Copie apenas ScriptCopier.exe
+- O ícone é opcional (já está embutido no .exe)
+
+───────────────────────────────────────────────────────────────
+🔄 ATUALIZAÇÕES TÉCNICAS
+───────────────────────────────────────────────────────────────
+
+Arquivos modificados:
+• ScriptCopier_UNIVERSAL.py - Código-fonte universal
+• build_exe.bat - Script de build atualizado
+• 2_gerar_executavel.bat - Script de geração atualizado
+
+Novos métodos adicionados:
+• mostrar_tela_inicial() - Tela inicial com instruções
+• selecionar_pasta_raiz() - Diálogo de seleção de pasta
+
+Métodos modificados:
+• buscar_pasta_roteiros() - Agora usa pasta_raiz_selecionada
+
+Variáveis adicionadas:
+• pasta_raiz_selecionada - Armazena pasta escolhida pelo usuário
+
+───────────────────────────────────────────────────────────────
+💡 CASOS DE USO
+───────────────────────────────────────────────────────────────
+
+✅ Gerenciar múltiplos projetos de documentários
+✅ Organizar roteiros de diferentes temas
+✅ Trabalhar com estruturas de pasta personalizadas
+✅ Compartilhar com outros criadores de conteúdo
+✅ Usar em diferentes computadores sem reconfiguração
+
+───────────────────────────────────────────────────────────────
+🎓 PARA DESENVOLVEDORES
+───────────────────────────────────────────────────────────────
+
+Para recompilar o executável:
+1. Modifique ScriptCopier_UNIVERSAL.py
+2. Execute: build_exe.bat
+3. Novo .exe estará em dist/
+
+Para testar sem compilar:
+python ScriptCopier_UNIVERSAL.py
+
+Dependências:
+- tkinter (built-in com Python)
+- pyperclip==1.8.2
+- pyinstaller>=6.15.0
+
+───────────────────────────────────────────────────────────────
+
+Versão: 4.0 Universal
+Python: 3.14.0
+PyInstaller: 6.16.0
+Data de Build: 2025-10-29
+
+Desenvolvido com ❤️ por Nardoto
+Assistido por Claude Code (Anthropic)
+
+═══════════════════════════════════════════════════════════════

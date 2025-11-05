@@ -1,12 +1,12 @@
 // ========================================
 // SCRIPT COPIER WEB - Desktop Layout
 // Portado de ScriptCopier_UNIVERSAL.py
-// Version: 2.2.0 - Fixed YouTube parsing (matching Python) and sticky files
+// Version: 2.3.0 - Fixed sticky file list (overflow containers)
 // ========================================
 
 class ScriptCopierApp {
     constructor() {
-        console.log('🚀 Script Copier v2.2.0 - Parser igual ao Python');
+        console.log('🚀 Script Copier v2.3.0 - Sticky list FIXED!');
         this.projects = {};
         this.currentProject = null;
         this.currentSection = null;
