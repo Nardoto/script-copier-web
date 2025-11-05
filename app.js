@@ -1,12 +1,12 @@
 // ========================================
 // SCRIPT COPIER WEB - Desktop Layout
 // Portado de ScriptCopier_UNIVERSAL.py
-// Version: 2.7.1 - Correções: IndexedDB + Gemini API atualizada
+// Version: 2.7.2 - Correção: Nome do modelo Gemini atualizado
 // ========================================
 
 class ScriptCopierApp {
     constructor() {
-        console.log('🚀 Script Copier v2.7.1 - Correções: IndexedDB + Gemini API atualizada');
+        console.log('🚀 Script Copier v2.7.2 - Correção: Nome do modelo Gemini atualizado');
 
         // Nova estrutura: múltiplas pastas raiz
         this.rootFolders = []; // Array de {id, name, handle, projects}
@@ -1580,7 +1580,7 @@ ${file.content}
 
         try {
             const response = await fetch(
-                `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${this.geminiApiKey}`,
+                `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash-latest:generateContent?key=${this.geminiApiKey}`,
                 {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
