@@ -1,12 +1,12 @@
 // ========================================
 // SCRIPT COPIER WEB - Desktop Layout
 // Portado de ScriptCopier_UNIVERSAL.py
-// Version: 2.8.4 - Correção: tradução de arquivo completo agora funciona corretamente
+// Version: 2.8.5 - Correção: título do modal de progresso agora mostra contexto correto
 // ========================================
 
 class ScriptCopierApp {
     constructor() {
-        console.log('🚀 Script Copier v2.8.4 - Tradução de arquivo completo corrigida');
+        console.log('🚀 Script Copier v2.8.5 - Título do modal de progresso corrigido');
 
         // Nova estrutura: múltiplas pastas raiz
         this.rootFolders = []; // Array de {id, name, handle, projects}
@@ -1674,7 +1674,7 @@ class ScriptCopierApp {
         return patterns.some(pattern => pattern.test(content));
     }
 
-    showAIProgressModal(file) {
+    showAIProgressModal(file, title = 'Análise de IA em Andamento') {
         // Criar modal de progresso se não existir
         let modal = document.getElementById('aiProgressModal');
 
@@ -1685,13 +1685,13 @@ class ScriptCopierApp {
             modal.innerHTML = `
                 <div class="modal-content" style="max-width: 700px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                        <h2 style="margin: 0; color: var(--accent-primary); display: flex; align-items: center; gap: 0.5rem;">
+                        <h2 id="aiProgressTitle" style="margin: 0; color: var(--accent-primary); display: flex; align-items: center; gap: 0.5rem;">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M12 2L2 7l10 5 10-5-10-5z"/>
                                 <path d="M2 17l10 5 10-5"/>
                                 <path d="M2 12l10 5 10-5"/>
                             </svg>
-                            Análise de IA em Andamento
+                            <span id="aiProgressTitleText">Análise de IA em Andamento</span>
                         </h2>
                     </div>
 
@@ -1714,6 +1714,12 @@ class ScriptCopierApp {
                 </div>
             `;
             document.body.appendChild(modal);
+        }
+
+        // Atualizar título do modal
+        const titleElement = document.getElementById('aiProgressTitleText');
+        if (titleElement) {
+            titleElement.textContent = title;
         }
 
         // Preencher informações do arquivo
@@ -1790,7 +1796,7 @@ class ScriptCopierApp {
         this.showAIProgressModal({
             name: this.currentSection.title,
             content: this.currentSection.text
-        });
+        }, '🌐 Tradução em Andamento');
         this.updateAIProgress('Preparando tradução...', 10);
 
         const prompt = `
@@ -2101,7 +2107,7 @@ TRADUÇÃO FIEL PARA ${targetLanguage.toUpperCase()}:
         this.showAIProgressModal({
             name: this.currentFile.name,
             content: fileContent.substring(0, 500) + '...'
-        });
+        }, '🌐 Tradução de Arquivo Completo em Andamento');
         this.updateAIProgress('Preparando tradução do arquivo completo...', 10);
 
         const prompt = `
