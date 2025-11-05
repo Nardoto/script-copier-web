@@ -1,12 +1,12 @@
 // ========================================
 // SCRIPT COPIER WEB - Desktop Layout
 // Portado de ScriptCopier_UNIVERSAL.py
-// Version: 2.3.0 - Fixed sticky file list (overflow containers)
+// Version: 2.4.0 - Help/About modals + expanded file type support
 // ========================================
 
 class ScriptCopierApp {
     constructor() {
-        console.log('🚀 Script Copier v2.3.0 - Sticky list FIXED!');
+        console.log('🚀 Script Copier v2.4.0 - Help/About modals + expanded file support');
         this.projects = {};
         this.currentProject = null;
         this.currentSection = null;
@@ -35,6 +35,21 @@ class ScriptCopierApp {
 
     setupEventListeners() {
         // Header buttons
+        document.getElementById('helpButton').addEventListener('click', () => {
+            document.getElementById('helpModal').style.display = 'block';
+        });
+
+        document.getElementById('aboutButton').addEventListener('click', () => {
+            document.getElementById('aboutModal').style.display = 'block';
+        });
+
+        // Close modals when clicking outside
+        window.addEventListener('click', (event) => {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = 'none';
+            }
+        });
+
         document.getElementById('uploadButton').addEventListener('click', () => {
             this.selectDirectory();
         });
@@ -173,7 +188,7 @@ class ScriptCopierApp {
                 const files = [];
 
                 for await (const fileEntry of entry.values()) {
-                    if (fileEntry.kind === 'file' && fileEntry.name.endsWith('.txt')) {
+                    if (fileEntry.kind === 'file' && this.isSupportedFile(fileEntry.name)) {
                         const file = await fileEntry.getFile();
                         const content = await file.text();
 
@@ -422,6 +437,26 @@ class ScriptCopierApp {
 
     countWords(text) {
         return text.trim().split(/\s+/).filter(word => word.length > 0).length;
+    }
+
+    // Verifica se o arquivo é de um tipo suportado
+    isSupportedFile(filename) {
+        const lower = filename.toLowerCase();
+        const supportedExtensions = [
+            '.txt',   // Texto simples
+            '.md',    // Markdown
+            '.rtf',   // Rich Text Format
+            '.doc',   // Word antigo
+            '.docx',  // Word novo
+            '.pdf',   // PDF
+            '.srt',   // Legendas SubRip
+            '.vtt',   // WebVTT
+            '.sub',   // Legendas genéricas
+            '.fountain', // Formato Fountain para roteiros
+            '.fdx',   // Final Draft
+            '.celtx', // Celtx
+        ];
+        return supportedExtensions.some(ext => lower.endsWith(ext));
     }
 
     parseYoutubeDataFromFile(content) {

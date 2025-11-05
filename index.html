@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Script Copier Web - Gerenciador de roteiros para documentários">
-    <title>Script Copier Universal - Web Edition v2.3.0</title>
-    <link rel="stylesheet" href="styles.css?v=2.3.0">
+    <title>Script Copier Universal - Web Edition v2.4.0</title>
+    <link rel="stylesheet" href="styles.css?v=2.4.0">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -16,9 +16,21 @@
         <div class="header-content">
             <div class="logo">
                 <h1>SCRIPT COPIER UNIVERSAL</h1>
-                <span class="version">Web Edition v2.3.0</span>
+                <span class="version">Web Edition v2.4.0</span>
             </div>
             <div class="header-actions">
+                <button id="helpButton" class="btn-icon" title="Ajuda">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="2"/>
+                        <path d="M10 14V14.01M10 11C10 9.89543 10.8954 9 12 9C13.1046 9 14 8.10457 14 7C14 5.89543 13.1046 5 12 5C10.8954 5 10 5.89543 10 7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </button>
+                <button id="aboutButton" class="btn-icon" title="Sobre">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="2"/>
+                        <path d="M10 10V14M10 6V6.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </button>
                 <button id="uploadButton" class="btn-primary">
                     <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                         <path d="M10 3V17M10 3L6 7M10 3L14 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -330,10 +342,90 @@
         </div>
     </div>
 
+    <!-- Help Modal -->
+    <div id="helpModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Como Usar o Script Copier</h2>
+                <button class="modal-close" onclick="document.getElementById('helpModal').style.display='none'">&times;</button>
+            </div>
+            <div class="modal-body">
+                <h3>1. Selecionar Pasta do Projeto</h3>
+                <p>Clique em "Selecionar Pasta" e escolha a pasta raiz que contém suas subpastas de roteiros.</p>
+
+                <h3>2. Aba "Copiar Seções"</h3>
+                <p>• Visualize e copie seções do roteiro (OPENING, CHAPTER, ACT, etc.)</p>
+                <p>• Cards verdes com ✓ indicam seções já copiadas</p>
+                <p>• Contador de palavras e caracteres em tempo real</p>
+
+                <h3>3. Aba "Visualizar Arquivos"</h3>
+                <p>• Lista todos os arquivos do projeto</p>
+                <p>• Clique em um arquivo para visualizar o conteúdo</p>
+                <p>• Botão "Copiar" para copiar o arquivo completo</p>
+
+                <h3>4. Aba "Título e Descrição"</h3>
+                <p>• Carrega automaticamente dados do arquivo 05_Titulo_Descricao.txt</p>
+                <p>• 5 opções de títulos para YouTube</p>
+                <p>• Descrição e ideias para thumbnail</p>
+                <p>• Marque "Vídeo Postado" para controlar status</p>
+
+                <h3>Tipos de Arquivos Suportados</h3>
+                <p>• Texto: .txt, .md, .rtf</p>
+                <p>• Documentos: .doc, .docx, .pdf</p>
+                <p>• Legendas: .srt, .vtt, .sub</p>
+                <p>• Scripts: .fountain</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- About Modal -->
+    <div id="aboutModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Sobre o Script Copier</h2>
+                <button class="modal-close" onclick="document.getElementById('aboutModal').style.display='none'">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="about-logo">
+                    <h1 style="color: #cb6246; font-size: 2.5rem;">SCRIPT COPIER UNIVERSAL</h1>
+                    <p style="font-size: 1.2rem; color: #666;">Web Edition v2.4.0</p>
+                </div>
+
+                <h3>Desenvolvido por</h3>
+                <p style="font-size: 1.3rem; font-weight: bold; color: #cb6246;">Nardoto</p>
+                <p style="color: #666;">Gerenciador de roteiros para documentários bíblicos</p>
+
+                <hr style="margin: 2rem 0; border: none; border-top: 1px solid #ddd;">
+
+                <h3>Funcionalidades</h3>
+                <ul>
+                    <li>✅ Copiar seções de roteiros automaticamente</li>
+                    <li>✅ Visualizar múltiplos formatos de arquivo</li>
+                    <li>✅ Gerenciar títulos e descrições para YouTube</li>
+                    <li>✅ Histórico de cópias com indicadores visuais</li>
+                    <li>✅ Leitura direta de arquivos locais (File System Access API)</li>
+                </ul>
+
+                <h3>Tecnologias</h3>
+                <p>• HTML5, CSS3, JavaScript (Vanilla)</p>
+                <p>• File System Access API</p>
+                <p>• IndexedDB para persistência</p>
+                <p>• Portado de Python/tkinter para Web</p>
+
+                <hr style="margin: 2rem 0; border: none; border-top: 1px solid #ddd;">
+
+                <p style="text-align: center; color: #999; font-size: 0.9rem;">
+                    © 2025 Nardoto. Todos os direitos reservados.<br>
+                    <a href="https://github.com/nardoto" target="_blank" style="color: #cb6246;">GitHub</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
     <!-- Notification Toast -->
     <div id="toast" class="toast"></div>
 
     <!-- Scripts -->
-    <script src="app.js?v=2.3.0"></script>
+    <script src="app.js?v=2.4.0"></script>
 </body>
 </html>
