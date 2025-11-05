@@ -819,7 +819,7 @@ textarea:focus {
 }
 
 .modal-content {
-    background-color: var(--bg-color);
+    background-color: #ffffff;
     margin: 5% auto;
     width: 90%;
     max-width: 700px;
@@ -870,6 +870,7 @@ textarea:focus {
     padding: 2rem;
     overflow-y: auto;
     flex: 1;
+    background-color: #ffffff;
 }
 
 .modal-body h3 {
