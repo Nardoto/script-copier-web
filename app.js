@@ -1,12 +1,12 @@
 // ========================================
 // SCRIPT COPIER WEB - Desktop Layout
 // Portado de ScriptCopier_UNIVERSAL.py
-// Version: 2.8.0 - Tradutor de Roteiro com IA (substituiu divisão automática)
+// Version: 2.8.1 - Tradutor melhorado: barra de progresso + comparação lado a lado
 // ========================================
 
 class ScriptCopierApp {
     constructor() {
-        console.log('🚀 Script Copier v2.8.0 - Tradutor de Roteiro com Gemini AI');
+        console.log('🚀 Script Copier v2.8.1 - Tradutor com progresso e comparação lado a lado');
 
         // Nova estrutura: múltiplas pastas raiz
         this.rootFolders = []; // Array de {id, name, handle, projects}
@@ -1772,6 +1772,7 @@ class ScriptCopierApp {
 
         const languageMap = {
             'english': 'Inglês',
+            'portuguese': 'Português (Brasil)',
             'spanish': 'Espanhol',
             'french': 'Francês',
             'italian': 'Italiano',
@@ -1780,7 +1781,9 @@ class ScriptCopierApp {
 
         const targetLanguage = languageMap[languageSelector.value];
 
-        this.showToast(`🌐 Traduzindo para ${targetLanguage}...`, 'info');
+        // Mostrar barra de progresso
+        this.showAIProgressModal({ name: this.currentSection.title });
+        this.updateAIProgress('Preparando tradução...', 10);
 
         const prompt = `
 Traduza o seguinte texto de roteiro de documentário bíblico para ${targetLanguage}.
@@ -1799,6 +1802,8 @@ TRADUÇÃO PARA ${targetLanguage.toUpperCase()}:
 `;
 
         try {
+            this.updateAIProgress('Enviando para IA...', 30);
+
             const response = await fetch(
                 `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${this.geminiApiKey}`,
                 {
@@ -1812,6 +1817,8 @@ TRADUÇÃO PARA ${targetLanguage.toUpperCase()}:
                 }
             );
 
+            this.updateAIProgress('Processando resposta...', 60);
+
             if (!response.ok) {
                 const error = await response.json();
                 throw new Error(error.error?.message || 'Erro na API');
@@ -1824,43 +1831,90 @@ TRADUÇÃO PARA ${targetLanguage.toUpperCase()}:
                 throw new Error('Resposta vazia da IA');
             }
 
-            // Mostrar resultado em modal
-            this.showTranslationResult(this.currentSection.title, targetLanguage, translatedText);
+            this.updateAIProgress('Concluído!', 100);
+
+            // Fechar modal de progresso e mostrar resultado
+            setTimeout(() => {
+                this.closeAIProgressModal();
+                this.showTranslationResult(
+                    this.currentSection.title,
+                    targetLanguage,
+                    this.currentSection.text,
+                    translatedText
+                );
+            }, 500);
 
         } catch (error) {
             console.error('Erro ao traduzir:', error);
+            this.closeAIProgressModal();
             this.showToast(`❌ Erro na tradução: ${error.message}`, 'error');
         }
     }
 
-    showTranslationResult(sectionTitle, language, translatedText) {
+    showTranslationResult(sectionTitle, language, originalText, translatedText) {
         const modal = document.createElement('div');
         modal.className = 'modal';
         modal.style.display = 'block';
         modal.innerHTML = `
-            <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-content" style="max-width: 1200px; width: 90%;">
                 <div class="modal-header">
-                    <h2>🌐 Tradução Concluída</h2>
+                    <h2>🌐 Tradução: ${sectionTitle}</h2>
                     <button class="modal-close" onclick="this.closest('.modal').remove()">&times;</button>
                 </div>
                 <div class="modal-body">
                     <div style="margin-bottom: 1rem;">
-                        <h3 style="color: var(--accent-primary); margin: 0 0 0.5rem 0;">📄 ${sectionTitle}</h3>
                         <p style="color: var(--text-secondary); margin: 0;">
-                            <strong>Idioma:</strong> ${language}
+                            <strong>Idioma de destino:</strong> ${language}
                         </p>
                     </div>
 
-                    <div style="background: var(--bg-hover); padding: 1.5rem; border-radius: var(--radius-sm); max-height: 400px; overflow-y: auto; margin-bottom: 1.5rem;">
-                        <pre style="margin: 0; white-space: pre-wrap; font-family: 'Inter', sans-serif; line-height: 1.6; color: var(--text-primary);">${translatedText}</pre>
+                    <!-- Comparação lado a lado -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                        <!-- Coluna Original -->
+                        <div>
+                            <h4 style="color: var(--accent-primary); margin: 0 0 0.75rem 0; padding-bottom: 0.5rem; border-bottom: 2px solid var(--accent-primary);">
+                                📝 Original
+                            </h4>
+                            <div style="background: var(--bg-hover); padding: 1.5rem; border-radius: var(--radius-sm); max-height: 400px; overflow-y: auto;">
+                                <pre style="margin: 0; white-space: pre-wrap; font-family: 'Inter', sans-serif; line-height: 1.6; color: var(--text-primary); font-size: 0.9rem;">${originalText}</pre>
+                            </div>
+                        </div>
+
+                        <!-- Coluna Tradução -->
+                        <div>
+                            <h4 style="color: #667eea; margin: 0 0 0.75rem 0; padding-bottom: 0.5rem; border-bottom: 2px solid #667eea;">
+                                🌐 ${language}
+                            </h4>
+                            <div style="background: linear-gradient(135deg, #667eea11 0%, #764ba211 100%); padding: 1.5rem; border-radius: var(--radius-sm); max-height: 400px; overflow-y: auto; border: 2px solid #667eea;">
+                                <pre id="translatedTextContent" style="margin: 0; white-space: pre-wrap; font-family: 'Inter', sans-serif; line-height: 1.6; color: var(--text-primary); font-size: 0.9rem;">${translatedText}</pre>
+                            </div>
+                        </div>
                     </div>
 
+                    <!-- Botões de ação -->
                     <div style="display: flex; gap: 0.75rem;">
-                        <button onclick="navigator.clipboard.writeText(\`${translatedText.replace(/`/g, '\\`')}\`).then(() => { alert('✅ Tradução copiada!'); })" class="btn-primary" style="flex: 1;">
+                        <button onclick="
+                            const text = document.getElementById('translatedTextContent').textContent;
+                            navigator.clipboard.writeText(text).then(() => {
+                                this.textContent = '✅ Copiado!';
+                                setTimeout(() => { this.textContent = '📋 Copiar Tradução'; }, 2000);
+                            });
+                        " class="btn-primary" style="flex: 1;">
                             📋 Copiar Tradução
                         </button>
-                        <button onclick="this.closest('.modal').remove()" class="btn-secondary" style="flex: 1;">
-                            ✅ Fechar
+                        <button onclick="
+                            const original = \`${originalText.replace(/`/g, '\\`')}\`;
+                            const translated = document.getElementById('translatedTextContent').textContent;
+                            const full = 'ORIGINAL:\\n' + original + '\\n\\n---\\n\\nTRADUÇÃO (${language}):\\n' + translated;
+                            navigator.clipboard.writeText(full).then(() => {
+                                this.textContent = '✅ Copiado!';
+                                setTimeout(() => { this.textContent = '📄 Copiar Ambos'; }, 2000);
+                            });
+                        " class="btn-secondary" style="flex: 1;">
+                            📄 Copiar Ambos
+                        </button>
+                        <button onclick="this.closest('.modal').remove()" class="btn-secondary" style="flex: 0 0 auto; padding: 0 1.5rem;">
+                            ✕ Fechar
                         </button>
                     </div>
                 </div>
