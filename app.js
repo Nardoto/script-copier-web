@@ -8,20 +8,31 @@ class ScriptCopierApp {
         this.projects = {};
         this.currentProject = null;
         this.copyHistory = this.loadHistory();
+        this.directoryHandle = null; // Handle para acesso direto à pasta
         this.init();
     }
 
     init() {
         this.setupEventListeners();
         this.loadFromLocalStorage();
+        this.updateRefreshButtonVisibility();
+        this.checkSavedDirectory();
     }
 
     setupEventListeners() {
-        // Upload button
+        // Upload button - agora usa File System Access API
         document.getElementById('uploadButton').addEventListener('click', () => {
-            document.getElementById('fileInput').click();
+            this.selectDirectory();
         });
 
+        // Refresh button - recarrega arquivos da pasta
+        document.getElementById('refreshButton').addEventListener('click', () => {
+            if (this.directoryHandle) {
+                this.readDirectoryFiles(this.directoryHandle);
+            }
+        });
+
+        // Fallback para navegadores sem suporte
         document.getElementById('fileInput').addEventListener('change', (e) => {
             this.handleFileUpload(e.target.files);
         });
@@ -63,7 +74,209 @@ class ScriptCopierApp {
     }
 
     // ========================================
-    // FILE UPLOAD & PARSING
+    // FILE SYSTEM ACCESS API (Acesso Direto à Pasta)
+    // ========================================
+
+    async selectDirectory() {
+        // Verifica se o navegador suporta File System Access API
+        if (!('showDirectoryPicker' in window)) {
+            this.showToast('⚠️ Navegador não suporta acesso direto. Use upload de pasta.', 'error');
+            document.getElementById('fileInput').click();
+            return;
+        }
+
+        try {
+            // Solicita acesso à pasta
+            const dirHandle = await window.showDirectoryPicker({
+                mode: 'read',
+                startIn: 'documents'
+            });
+
+            this.directoryHandle = dirHandle;
+            await this.saveDirectoryHandle(dirHandle);
+
+            this.showToast(`📁 Pasta "${dirHandle.name}" selecionada!`, 'success');
+            this.updateRefreshButtonVisibility();
+
+            // Lê todos os arquivos da pasta
+            await this.readDirectoryFiles(dirHandle);
+
+        } catch (err) {
+            if (err.name !== 'AbortError') {
+                console.error('Erro ao selecionar pasta:', err);
+                this.showToast('Erro ao acessar pasta', 'error');
+            }
+        }
+    }
+
+    async checkSavedDirectory() {
+        const savedHandle = await this.loadDirectoryHandle();
+
+        if (!savedHandle) return;
+
+        try {
+            // Verifica se ainda tem permissão
+            const permission = await savedHandle.queryPermission({ mode: 'read' });
+
+            if (permission === 'granted') {
+                this.directoryHandle = savedHandle;
+                this.showToast(`✅ Pasta "${savedHandle.name}" reconectada!`, 'success');
+                this.updateRefreshButtonVisibility();
+                await this.readDirectoryFiles(savedHandle);
+            } else if (permission === 'prompt') {
+                // Pede permissão novamente
+                const newPermission = await savedHandle.requestPermission({ mode: 'read' });
+                if (newPermission === 'granted') {
+                    this.directoryHandle = savedHandle;
+                    this.updateRefreshButtonVisibility();
+                    await this.readDirectoryFiles(savedHandle);
+                }
+            }
+        } catch (err) {
+            console.log('Pasta salva não está mais acessível');
+            await this.clearSavedDirectory();
+        }
+    }
+
+    async readDirectoryFiles(dirHandle) {
+        this.showToast('Lendo arquivos da pasta...', 'info');
+
+        const projectMap = {};
+
+        // Percorre todas as entradas (pastas e arquivos)
+        for await (const entry of dirHandle.values()) {
+            // Se for uma subpasta
+            if (entry.kind === 'directory') {
+                const projectName = entry.name;
+                const files = [];
+
+                // Lê arquivos dentro da subpasta
+                for await (const fileEntry of entry.values()) {
+                    if (fileEntry.kind === 'file' && fileEntry.name.endsWith('.txt')) {
+                        const file = await fileEntry.getFile();
+                        const content = await file.text();
+
+                        files.push({
+                            name: file.name,
+                            content: content,
+                            size: file.size,
+                            relativePath: `${projectName}/${file.name}`
+                        });
+                    }
+                }
+
+                if (files.length > 0) {
+                    projectMap[projectName] = {
+                        name: projectName,
+                        files: files,
+                        path: projectName
+                    };
+                }
+            }
+            // Se for arquivo .txt direto na raiz
+            else if (entry.kind === 'file' && entry.name.endsWith('.txt')) {
+                const file = await entry.getFile();
+                const content = await file.text();
+
+                const projectName = dirHandle.name;
+
+                if (!projectMap[projectName]) {
+                    projectMap[projectName] = {
+                        name: projectName,
+                        files: [],
+                        path: ''
+                    };
+                }
+
+                projectMap[projectName].files.push({
+                    name: file.name,
+                    content: content,
+                    size: file.size,
+                    relativePath: file.name
+                });
+            }
+        }
+
+        // Parse sections for each project
+        Object.values(projectMap).forEach(project => {
+            project.sections = this.parseAllSections(project);
+            this.projects[project.name] = project;
+        });
+
+        this.saveToLocalStorage();
+        this.renderProjects();
+
+        const projectCount = Object.keys(projectMap).length;
+        const fileCount = Object.values(projectMap).reduce((sum, p) => sum + p.files.length, 0);
+        this.showToast(`${projectCount} projeto(s) • ${fileCount} arquivo(s) lidos!`, 'success');
+    }
+
+    async saveDirectoryHandle(dirHandle) {
+        try {
+            const db = await this.openDatabase();
+            const tx = db.transaction('handles', 'readwrite');
+            await tx.objectStore('handles').put(dirHandle, 'rootDirectory');
+            await tx.done;
+        } catch (err) {
+            console.error('Erro ao salvar handle:', err);
+        }
+    }
+
+    async loadDirectoryHandle() {
+        try {
+            const db = await this.openDatabase();
+            const tx = db.transaction('handles', 'readonly');
+            const handle = await tx.objectStore('handles').get('rootDirectory');
+            await tx.done;
+            return handle;
+        } catch (err) {
+            console.error('Erro ao carregar handle:', err);
+            return null;
+        }
+    }
+
+    async clearSavedDirectory() {
+        try {
+            const db = await this.openDatabase();
+            const tx = db.transaction('handles', 'readwrite');
+            await tx.objectStore('handles').delete('rootDirectory');
+            await tx.done;
+        } catch (err) {
+            console.error('Erro ao limpar handle:', err);
+        }
+    }
+
+    async openDatabase() {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open('ScriptCopierDB', 1);
+
+            request.onerror = () => reject(request.error);
+            request.onsuccess = () => resolve(request.result);
+
+            request.onupgradeneeded = (event) => {
+                const db = event.target.result;
+                if (!db.objectStoreNames.contains('handles')) {
+                    db.createObjectStore('handles');
+                }
+            };
+        });
+    }
+
+    updateRefreshButtonVisibility() {
+        const refreshButton = document.getElementById('refreshButton');
+        const uploadButton = document.getElementById('uploadButton');
+
+        if (this.directoryHandle) {
+            refreshButton.style.display = 'inline-flex';
+            uploadButton.textContent = 'Alterar Pasta';
+        } else {
+            refreshButton.style.display = 'none';
+            uploadButton.textContent = 'Selecionar Pasta';
+        }
+    }
+
+    // ========================================
+    // FILE UPLOAD & PARSING (Fallback)
     // ========================================
 
     async handleFileUpload(files) {

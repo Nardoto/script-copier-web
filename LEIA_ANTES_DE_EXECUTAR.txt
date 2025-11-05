@@ -1,0 +1,150 @@
+═══════════════════════════════════════════════════════
+  🚀 SCRIPT COPIER WEB - INSTRUÇÕES DE DEPLOY
+═══════════════════════════════════════════════════════
+
+PASSO 1: CRIAR REPOSITÓRIO NO GITHUB (1 minuto)
+═══════════════════════════════════════════════════════
+
+1. Abra seu navegador
+
+2. Acesse: https://github.com/new
+
+3. Preencha:
+   - Repository name: script-copier-web
+   - Description: Gerenciador web de roteiros
+   - Visibilidade: ✅ PUBLIC (OBRIGATÓRIO)
+   - ❌ NÃO marque "Add a README file"
+
+4. Clique em "Create repository"
+
+5. ✅ PRONTO! Não precisa fazer mais nada na página
+
+
+═══════════════════════════════════════════════════════
+PASSO 2: EXECUTAR O SCRIPT (30 segundos)
+═══════════════════════════════════════════════════════
+
+1. Dê DUPLO-CLIQUE no arquivo:
+
+   📄 FAZER_PUSH_GITHUB.bat
+
+2. Vai pedir autenticação:
+
+   Username: Nardoto
+   Password: [SEU TOKEN - veja abaixo se não tiver]
+
+3. Aguardar upload (5-10 segundos)
+
+4. ✅ SUCESSO!
+
+
+═══════════════════════════════════════════════════════
+NÃO TEM TOKEN? GERAR AGORA (2 minutos)
+═══════════════════════════════════════════════════════
+
+1. Acesse: https://github.com/settings/tokens
+
+2. Clique em "Generate new token (classic)"
+
+3. Preencha:
+   - Note: Script Copier Token
+   - Expiration: 90 days (ou o que preferir)
+   - Marque: ✅ repo (full control of private repositories)
+
+4. Clique em "Generate token"
+
+5. 📋 COPIE O TOKEN (aparece só 1 vez!)
+   Exemplo: ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+6. Use esse token como senha no script
+
+
+═══════════════════════════════════════════════════════
+PASSO 3: ATIVAR GITHUB PAGES (1 minuto)
+═══════════════════════════════════════════════════════
+
+1. Acesse: https://github.com/Nardoto/script-copier-web
+
+2. Clique em "Settings" (engrenagem)
+
+3. No menu lateral esquerdo: "Pages"
+
+4. Em "Source":
+   - Branch: selecione "main"
+   - Folder: deixe "/ (root)"
+
+5. Clique em "Save"
+
+6. Aguarde 2 minutos
+
+7. Refresh a página - vai aparecer:
+   ✅ Your site is live at https://nardoto.github.io/script-copier-web/
+
+
+═══════════════════════════════════════════════════════
+PASSO 4: TESTAR! (30 segundos)
+═══════════════════════════════════════════════════════
+
+Acesse: https://nardoto.github.io/script-copier-web/
+
+Teste:
+- Upload do arquivo exemplo-roteiro.txt
+- Detecção de seções
+- Copiar texto
+- Ver histórico
+
+
+═══════════════════════════════════════════════════════
+✅ CHECKLIST RÁPIDO
+═══════════════════════════════════════════════════════
+
+[ ] Criou repositório script-copier-web no GitHub
+[ ] Executou FAZER_PUSH_GITHUB.bat
+[ ] Autenticou com token
+[ ] Push concluído com sucesso
+[ ] Ativou GitHub Pages (Settings > Pages)
+[ ] Aguardou 2 minutos
+[ ] Acessou https://nardoto.github.io/script-copier-web/
+[ ] Testou upload e cópia de seções
+
+
+═══════════════════════════════════════════════════════
+❓ PROBLEMAS?
+═══════════════════════════════════════════════════════
+
+❌ Erro "repository not found"
+   → Certifique-se que criou o repositório no GitHub primeiro
+
+❌ Erro "authentication failed"
+   → Use Personal Access Token, não a senha normal
+   → Gere em: https://github.com/settings/tokens
+   → Marque permissão: repo
+
+❌ Site não abre
+   → Aguarde até 5 minutos para GitHub processar
+   → Verifique se ativou Pages em Settings > Pages
+
+❌ Clipboard não funciona
+   → GitHub Pages usa HTTPS automático, deve funcionar
+   → Aguarde deploy completo
+
+
+═══════════════════════════════════════════════════════
+📞 SUPORTE
+═══════════════════════════════════════════════════════
+
+Documentação completa: README.md
+Instruções detalhadas: DEPLOY.md
+
+
+═══════════════════════════════════════════════════════
+🎉 SUCESSO!
+═══════════════════════════════════════════════════════
+
+Seu Script Copier Web está no ar em:
+https://nardoto.github.io/script-copier-web/
+
+Compartilhe com sua equipe! 🚀
+
+
+═══════════════════════════════════════════════════════
