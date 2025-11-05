@@ -10,11 +10,6 @@ class ScriptCopierApp {
         this.currentSection = null;
         this.currentFile = null;
         this.copyHistory = this.loadHistory();
-
-        // Limpar dados do YouTube para forçar reparse (temporário - remover depois de testar)
-        localStorage.removeItem('youtubeData');
-        console.log('🔄 Cache do YouTube limpo para forçar reparse dos títulos');
-
         this.youtubeData = this.loadYoutubeData();
         this.directoryHandle = null;
         this.init();
@@ -433,15 +428,15 @@ class ScriptCopierApp {
             // Debug: Log para verificar o conteúdo
             console.log('Parseando conteúdo do YouTube:', content.substring(0, 500));
 
-            // Extrair títulos (OPÇÃO 1 a 5) - agora corrigido para o formato real
-            // Buscar por OPÇÃO X: seguido de quebra de linha e o texto até a próxima linha vazia
-            const titleRegex = /OPÇÃO\s+(\d+):\s*\n(.*?)(?:\n\n|\n━|$)/g;
+            // Extrair títulos (OPÇÃO 1 a 5) - corrigido para capturar títulos multi-linha
+            // Buscar por OPÇÃO X: seguido do conteúdo até a próxima OPÇÃO ou separador
+            const titleRegex = /OPÇÃO\s+(\d+):\s*\n([\s\S]*?)(?=\nOPÇÃO\s+\d+:|\n━|$)/g;
             let match;
             let titleCount = 0;
 
             while ((match = titleRegex.exec(content)) !== null) {
                 const optionNum = parseInt(match[1]);
-                const title = match[2].trim();
+                const title = match[2].trim().replace(/\n+/g, ' '); // Remove quebras de linha extras
                 console.log(`Título encontrado - OPÇÃO ${optionNum}: ${title}`);
                 data.titles[optionNum - 1] = title;
                 titleCount++;
@@ -849,18 +844,19 @@ class ScriptCopierApp {
     }
 
     loadYoutubeDataForProject(projectName) {
-        let data = this.youtubeData[projectName] || {};
+        // SEMPRE limpar e recarregar do arquivo para garantir dados atualizados
+        delete this.youtubeData[projectName];
+        localStorage.removeItem('youtubeData'); // Limpar cache completamente
 
-        // SEMPRE tentar carregar do arquivo 05_Titulo_Descricao.txt para garantir dados atualizados
+        let data = {};
+
         if (this.projects[projectName]) {
             const youtubeFile = this.projects[projectName].files.find(f =>
                 f.name.includes('05_Titulo_Descricao') || f.name.includes('05_Titulo_Descrição')
             );
 
             if (youtubeFile) {
-                // Limpar dados antigos para forçar reparse
-                delete this.youtubeData[projectName];
-
+                console.log('📄 Arquivo YouTube encontrado:', youtubeFile.name);
                 const parsedData = this.parseYoutubeDataFromFile(youtubeFile.content);
 
                 // Preencher com dados do arquivo

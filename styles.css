@@ -341,6 +341,7 @@ body {
     grid-template-columns: 450px 1fr;
     gap: 1.5rem;
     min-height: 600px;
+    align-items: start;
 }
 
 .sections-column,
@@ -535,25 +536,24 @@ body {
    FILES VIEW (2 colunas)
    ======================================== */
 
-.files-column,
+.files-column {
+    display: flex;
+    flex-direction: column;
+    position: sticky;
+    top: 20px;
+    height: calc(100vh - 300px);
+    align-self: start;
+}
+
 .file-content-column {
     display: flex;
     flex-direction: column;
-}
-
-/* Tornando a coluna de arquivos fixa durante o scroll */
-.files-column {
-    position: sticky;
-    top: 0;
-    height: calc(100vh - 250px);
-    align-self: flex-start;
 }
 
 .files-list-sidebar {
     flex: 1;
     overflow-y: auto;
     padding-right: 0.5rem;
-    max-height: calc(100vh - 350px);
 }
 
 .file-item {
