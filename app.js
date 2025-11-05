@@ -1,13 +1,18 @@
 // ========================================
 // SCRIPT COPIER WEB - Desktop Layout
 // Portado de ScriptCopier_UNIVERSAL.py
-// Version: 2.4.0 - Help/About modals + expanded file type support
+// Version: 2.5.0 - Gerenciador de pastas raiz múltiplas
 // ========================================
 
 class ScriptCopierApp {
     constructor() {
-        console.log('🚀 Script Copier v2.4.0 - Help/About modals + expanded file support');
-        this.projects = {};
+        console.log('🚀 Script Copier v2.5.0 - Gerenciador de pastas raiz múltiplas');
+
+        // Nova estrutura: múltiplas pastas raiz
+        this.rootFolders = []; // Array de {id, name, handle, projects}
+        this.currentRootFolderId = null;
+
+        this.projects = {}; // Projetos da pasta raiz atual
         this.currentProject = null;
         this.currentSection = null;
         this.currentFile = null;
@@ -22,11 +27,27 @@ class ScriptCopierApp {
         this.init();
     }
 
-    init() {
+    async init() {
         this.setupEventListeners();
-        this.loadFromLocalStorage();
+
+        // Carregar pastas raiz salvas
+        await this.loadRootFoldersFromIndexedDB();
+        this.renderRootFolderDropdown();
+
+        // Se houver pastas raiz salvas, não carregar localStorage antigo
+        if (this.rootFolders.length === 0) {
+            this.loadFromLocalStorage();
+            await this.checkSavedDirectory();
+        } else {
+            // Se houver 1 pasta, carregar automaticamente
+            if (this.rootFolders.length === 1) {
+                this.currentRootFolderId = this.rootFolders[0].id;
+                await this.loadRootFolderProjects(this.currentRootFolderId);
+                this.renderRootFolderDropdown();
+            }
+        }
+
         this.updateUI();
-        this.checkSavedDirectory();
     }
 
     // ========================================
@@ -48,6 +69,19 @@ class ScriptCopierApp {
             if (event.target.classList.contains('modal')) {
                 event.target.style.display = 'none';
             }
+        });
+
+        // Root folder management
+        document.getElementById('rootFolderDropdown')?.addEventListener('change', (e) => {
+            this.switchRootFolder(e.target.value);
+        });
+
+        document.getElementById('addRootFolderButton')?.addEventListener('click', () => {
+            this.addNewRootFolder();
+        });
+
+        document.getElementById('removeRootFolderButton')?.addEventListener('click', () => {
+            this.removeCurrentRootFolder();
         });
 
         document.getElementById('uploadButton').addEventListener('click', () => {
@@ -142,15 +176,144 @@ class ScriptCopierApp {
                 startIn: 'documents'
             });
 
-            this.directoryHandle = dirHandle;
-            await this.saveDirectoryHandle(dirHandle);
-            this.showToast(`📁 Pasta "${dirHandle.name}" selecionada!`, 'success');
-            await this.readDirectoryFiles(dirHandle);
+            // Adicionar como nova pasta raiz
+            await this.addRootFolderFromHandle(dirHandle);
         } catch (err) {
             if (err.name !== 'AbortError') {
                 console.error('Erro ao selecionar pasta:', err);
                 this.showToast('Erro ao acessar pasta', 'error');
             }
+        }
+    }
+
+    // Adiciona nova pasta raiz (para botão "+Nova Pasta")
+    async addNewRootFolder() {
+        await this.selectDirectory();
+    }
+
+    // Adiciona pasta raiz a partir de um handle
+    async addRootFolderFromHandle(dirHandle) {
+        const id = Date.now().toString();
+        const name = dirHandle.name;
+
+        // Verificar se já existe
+        const exists = this.rootFolders.find(rf => rf.name === name);
+        if (exists) {
+            this.showToast(`⚠️ Pasta "${name}" já está na lista!`, 'error');
+            this.currentRootFolderId = exists.id;
+            this.renderRootFolderDropdown();
+            await this.loadRootFolderProjects(exists.id);
+            return;
+        }
+
+        const rootFolder = {
+            id,
+            name,
+            handle: dirHandle,
+            projects: {}
+        };
+
+        this.rootFolders.push(rootFolder);
+        this.currentRootFolderId = id;
+
+        await this.saveRootFoldersToIndexedDB();
+        this.renderRootFolderDropdown();
+        this.showToast(`📁 Pasta "${name}" adicionada!`, 'success');
+
+        // Carregar projetos desta pasta
+        await this.loadRootFolderProjects(id);
+    }
+
+    // Remove pasta raiz atual
+    async removeCurrentRootFolder() {
+        if (!this.currentRootFolderId) return;
+
+        const currentFolder = this.rootFolders.find(rf => rf.id === this.currentRootFolderId);
+        if (!currentFolder) return;
+
+        const confirmed = confirm(`Remover pasta raiz "${currentFolder.name}" da lista?\n\nIsso não apaga os arquivos do disco.`);
+        if (!confirmed) return;
+
+        this.rootFolders = this.rootFolders.filter(rf => rf.id !== this.currentRootFolderId);
+        this.currentRootFolderId = null;
+        this.projects = {};
+
+        await this.saveRootFoldersToIndexedDB();
+        this.renderRootFolderDropdown();
+        this.updateUI();
+        this.showToast(`🗑️ Pasta raiz removida da lista`, 'success');
+    }
+
+    // Troca para outra pasta raiz
+    async switchRootFolder(folderId) {
+        if (!folderId) return;
+
+        this.currentRootFolderId = folderId;
+        this.currentProject = null;
+        this.projects = {};
+
+        await this.loadRootFolderProjects(folderId);
+    }
+
+    // Carrega projetos de uma pasta raiz específica
+    async loadRootFolderProjects(folderId) {
+        const rootFolder = this.rootFolders.find(rf => rf.id === folderId);
+        if (!rootFolder) return;
+
+        this.showToast(`Carregando projetos de "${rootFolder.name}"...`, 'info');
+
+        try {
+            // Verificar permissão
+            const permission = await rootFolder.handle.queryPermission({ mode: 'read' });
+            if (permission !== 'granted') {
+                const newPermission = await rootFolder.handle.requestPermission({ mode: 'read' });
+                if (newPermission !== 'granted') {
+                    this.showToast('⚠️ Permissão negada para acessar pasta', 'error');
+                    return;
+                }
+            }
+
+            // Ler diretórios e arquivos
+            await this.readDirectoryFiles(rootFolder.handle, folderId);
+        } catch (err) {
+            console.error('Erro ao carregar projetos:', err);
+            this.showToast(`Erro ao acessar pasta "${rootFolder.name}"`, 'error');
+        }
+    }
+
+    // Renderiza dropdown de pastas raiz
+    renderRootFolderDropdown() {
+        const dropdown = document.getElementById('rootFolderDropdown');
+        const manager = document.getElementById('rootFolderManager');
+        const removeBtn = document.getElementById('removeRootFolderButton');
+        const uploadBtn = document.getElementById('uploadButton');
+
+        if (!dropdown || !manager) return;
+
+        // Mostrar/ocultar gerenciador
+        if (this.rootFolders.length > 0) {
+            manager.style.display = 'flex';
+            uploadBtn.style.display = 'none';
+        } else {
+            manager.style.display = 'none';
+            uploadBtn.style.display = 'inline-flex';
+        }
+
+        // Preencher dropdown
+        dropdown.innerHTML = '<option value="">Selecione pasta raiz</option>';
+        this.rootFolders.forEach(rf => {
+            const option = document.createElement('option');
+            option.value = rf.id;
+            option.textContent = `📁 ${rf.name}`;
+            dropdown.appendChild(option);
+        });
+
+        // Selecionar atual
+        if (this.currentRootFolderId) {
+            dropdown.value = this.currentRootFolderId;
+            removeBtn.style.display = 'inline-flex';
+        } else {
+            removeBtn.style.display = 'none';
         }
     }
 
@@ -178,7 +341,7 @@ class ScriptCopierApp {
         }
     }
 
-    async readDirectoryFiles(dirHandle) {
+    async readDirectoryFiles(dirHandle, folderId = null) {
         this.showToast('Lendo arquivos da pasta...', 'info');
         const projectMap = {};
 
@@ -217,6 +380,15 @@ class ScriptCopierApp {
             project.sections = this.parseAllSections(project);
             this.projects[project.name] = project;
         });
+
+        // Se folderId foi fornecido, salvar projetos na pasta raiz
+        if (folderId) {
+            const rootFolder = this.rootFolders.find(rf => rf.id === folderId);
+            if (rootFolder) {
+                rootFolder.projects = { ...projectMap };
+                await this.saveRootFoldersToIndexedDB();
+            }
+        }
 
         this.saveToLocalStorage();
         this.renderProjectDropdown();
@@ -265,7 +437,7 @@ class ScriptCopierApp {
 
     async openDatabase() {
         return new Promise((resolve, reject) => {
-            const request = indexedDB.open('ScriptCopierDB', 1);
+            const request = indexedDB.open('ScriptCopierDB', 2); // Versão 2 para incluir rootFolders
             request.onerror = () => reject(request.error);
             request.onsuccess = () => resolve(request.result);
             request.onupgradeneeded = (event) => {
@@ -273,8 +445,63 @@ class ScriptCopierApp {
                 if (!db.objectStoreNames.contains('handles')) {
                     db.createObjectStore('handles');
                 }
+                if (!db.objectStoreNames.contains('rootFolders')) {
+                    db.createObjectStore('rootFolders');
+                }
             };
         });
+    }
+
+    // Salvar pastas raiz no IndexedDB
+    async saveRootFoldersToIndexedDB() {
+        try {
+            const db = await this.openDatabase();
+            const tx = db.transaction('rootFolders', 'readwrite');
+            const store = tx.objectStore('rootFolders');
+
+            // Salvar cada pasta raiz separadamente
+            for (const rf of this.rootFolders) {
+                await store.put({
+                    id: rf.id,
+                    name: rf.name,
+                    handle: rf.handle
+                }, rf.id);
+            }
+
+            await tx.done;
+            console.log('✅ Pastas raiz salvas no IndexedDB');
+        } catch (err) {
+            console.error('Erro ao salvar pastas raiz:', err);
+        }
+    }
+
+    // Carregar pastas raiz do IndexedDB
+    async loadRootFoldersFromIndexedDB() {
+        try {
+            const db = await this.openDatabase();
+            const tx = db.transaction('rootFolders', 'readonly');
+            const store = tx.objectStore('rootFolders');
+            const allKeys = await store.getAllKeys();
+
+            this.rootFolders = [];
+
+            for (const key of allKeys) {
+                const data = await store.get(key);
+                if (data && data.handle) {
+                    this.rootFolders.push({
+                        id: data.id,
+                        name: data.name,
+                        handle: data.handle,
+                        projects: {}
+                    });
+                }
+            }
+
+            await tx.done;
+            console.log(`✅ ${this.rootFolders.length} pasta(s) raiz carregadas`);
+        } catch (err) {
+            console.error('Erro ao carregar pastas raiz:', err);
+        }
     }
 
     // ========================================

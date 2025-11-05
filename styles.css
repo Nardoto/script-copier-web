@@ -157,6 +157,25 @@ body {
     align-items: center;
 }
 
+.root-folder-dropdown {
+    padding: 0.6rem 1rem;
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    background: var(--bg-primary);
+    cursor: pointer;
+    transition: border-color 0.2s ease;
+    min-width: 200px;
+}
+
+.root-folder-dropdown:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+}
+
 .btn-icon {
     background: none;
     border: 1px solid var(--border-color);

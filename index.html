@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Script Copier Web - Gerenciador de roteiros para documentários">
-    <title>Script Copier Universal - Web Edition v2.4.0</title>
-    <link rel="stylesheet" href="styles.css?v=2.4.0">
+    <title>Script Copier Universal - Web Edition v2.5.0</title>
+    <link rel="stylesheet" href="styles.css?v=2.5.0">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -16,7 +16,7 @@
         <div class="header-content">
             <div class="logo">
                 <h1>SCRIPT COPIER UNIVERSAL</h1>
-                <span class="version">Web Edition v2.4.0</span>
+                <span class="version">Web Edition v2.5.0</span>
             </div>
             <div class="header-actions">
                 <button id="helpButton" class="btn-icon" title="Ajuda">
@@ -31,6 +31,24 @@
                         <path d="M10 10V14M10 6V6.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                     </svg>
                 </button>
+
+                <!-- Root Folder Manager -->
+                <div id="rootFolderManager" style="display: none; align-items: center; gap: 0.5rem;">
+                    <select id="rootFolderDropdown" class="root-folder-dropdown">
+                        <option value="">Selecione pasta raiz</option>
+                    </select>
+                    <button id="addRootFolderButton" class="btn-icon" title="Adicionar nova pasta raiz">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                            <path d="M10 3V17M3 10H17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </button>
+                    <button id="removeRootFolderButton" class="btn-icon" title="Remover pasta raiz atual" style="display: none;">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                            <path d="M3 6h14M8 6V4h4v2M5 6v11h10V6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </button>
+                </div>
+
                 <button id="uploadButton" class="btn-primary">
                     <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                         <path d="M10 3V17M10 3L6 7M10 3L14 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -388,7 +406,7 @@
             <div class="modal-body">
                 <div class="about-logo">
                     <h1 style="color: #cb6246; font-size: 2.5rem;">SCRIPT COPIER UNIVERSAL</h1>
-                    <p style="font-size: 1.2rem; color: #666;">Web Edition v2.4.0</p>
+                    <p style="font-size: 1.2rem; color: #666;">Web Edition v2.5.0</p>
                 </div>
 
                 <h3>Desenvolvido por</h3>
@@ -426,6 +444,6 @@
     <div id="toast" class="toast"></div>
 
     <!-- Scripts -->
-    <script src="app.js?v=2.4.0"></script>
+    <script src="app.js?v=2.5.0"></script>
 </body>
 </html>
