@@ -425,8 +425,8 @@ class ScriptCopierApp {
         };
 
         try {
-            // Extrair títulos (OPÇÃO 1 a 5)
-            const titleRegex = /OPÇÃO\s+(\d+):\s*\n(.+?)(?=\n\nOPÇÃO|\n\n━|$)/gs;
+            // Extrair títulos (OPÇÃO 1 a 5) - captura múltiplas linhas
+            const titleRegex = /OPÇÃO\s+(\d+):\s*\n([\s\S]+?)(?=\n\nOPÇÃO|\n\n━|$)/g;
             let match;
             while ((match = titleRegex.exec(content)) !== null) {
                 const optionNum = parseInt(match[1]);
