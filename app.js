@@ -1,12 +1,12 @@
 // ========================================
 // SCRIPT COPIER WEB - Desktop Layout
 // Portado de ScriptCopier_UNIVERSAL.py
-// Version: 2.6.0 - Sistema de Estatísticas e Análise de Projetos
+// Version: 2.7.0 - Integração com IA (Google Gemini) - Modo Híbrido
 // ========================================
 
 class ScriptCopierApp {
     constructor() {
-        console.log('🚀 Script Copier v2.6.0 - Sistema de Estatísticas e Análise de Projetos');
+        console.log('🚀 Script Copier v2.7.0 - Integração com IA (Google Gemini) - Modo Híbrido');
 
         // Nova estrutura: múltiplas pastas raiz
         this.rootFolders = []; // Array de {id, name, handle, projects}
@@ -24,6 +24,10 @@ class ScriptCopierApp {
 
         this.youtubeData = this.loadYoutubeData();
         this.directoryHandle = null;
+
+        // AI Configuration
+        this.geminiApiKey = localStorage.getItem('geminiApiKey') || '';
+
         this.init();
     }
 
@@ -62,6 +66,10 @@ class ScriptCopierApp {
 
         document.getElementById('aboutButton').addEventListener('click', () => {
             document.getElementById('aboutModal').style.display = 'block';
+        });
+
+        document.getElementById('settingsButton').addEventListener('click', () => {
+            this.openSettingsModal();
         });
 
         // Close modals when clicking outside
@@ -149,6 +157,15 @@ class ScriptCopierApp {
         // Analyze project button
         document.getElementById('analyzeProjectButton')?.addEventListener('click', () => {
             this.analyzeCurrentProject();
+        });
+
+        // Settings: API Key management
+        document.getElementById('saveApiKeyButton')?.addEventListener('click', () => {
+            this.saveGeminiApiKey();
+        });
+
+        document.getElementById('testApiKeyButton')?.addEventListener('click', () => {
+            this.testGeminiConnection();
         });
 
         // Keyboard shortcuts
@@ -913,6 +930,8 @@ class ScriptCopierApp {
         const sortedFiles = [...project.files].sort((a, b) => a.name.localeCompare(b.name));
 
         sortedFiles.forEach((file, index) => {
+            const hasMarkers = this.hasMarkers(file.content);
+
             const item = document.createElement('div');
             item.className = 'file-item';
             item.dataset.index = index;
@@ -920,8 +939,25 @@ class ScriptCopierApp {
             const sizeKB = (file.size / 1024).toFixed(2);
 
             item.innerHTML = `
-                <span class="file-name">${file.name}</span>
-                <span class="file-size">${sizeKB} KB</span>
+                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                    <div style="flex: 1; min-width: 0;">
+                        <span class="file-name">${file.name}</span>
+                        <span class="file-size">${sizeKB} KB</span>
+                    </div>
+                    ${!hasMarkers ? `
+                        <button
+                            class="btn-ai-detect"
+                            onclick="event.stopPropagation(); app.analyzeFileWithAI(${JSON.stringify(file).replace(/"/g, '&quot;')})"
+                            title="Detectar seções com IA"
+                        >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                                <path d="M2 17l10 5 10-5"/>
+                                <path d="M2 12l10 5 10-5"/>
+                            </svg>
+                        </button>
+                    ` : ''}
+                </div>
             `;
 
             item.addEventListener('click', () => {
@@ -1404,6 +1440,267 @@ class ScriptCopierApp {
         if (days < 30) return `${Math.floor(days / 7)} semanas atrás`;
         if (days < 365) return `${Math.floor(days / 30)} meses atrás`;
         return `${Math.floor(days / 365)} anos atrás`;
+    }
+
+    // ========================================
+    // AI INTEGRATION (GOOGLE GEMINI)
+    // ========================================
+
+    openSettingsModal() {
+        const modal = document.getElementById('settingsModal');
+        const input = document.getElementById('geminiApiKey');
+
+        if (modal && input) {
+            input.value = this.geminiApiKey;
+            modal.style.display = 'block';
+        }
+    }
+
+    saveGeminiApiKey() {
+        const input = document.getElementById('geminiApiKey');
+        if (!input) return;
+
+        const apiKey = input.value.trim();
+
+        if (!apiKey) {
+            this.showToast('⚠️ Digite uma API Key válida', 'error');
+            return;
+        }
+
+        this.geminiApiKey = apiKey;
+        localStorage.setItem('geminiApiKey', apiKey);
+        this.showToast('✅ API Key salva com sucesso!', 'success');
+    }
+
+    async testGeminiConnection() {
+        if (!this.geminiApiKey) {
+            this.showToast('⚠️ Configure a API Key primeiro', 'error');
+            return;
+        }
+
+        this.showToast('🧪 Testando conexão...', 'info');
+
+        try {
+            const response = await fetch(
+                `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${this.geminiApiKey}`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{ text: 'Responda apenas: OK' }]
+                        }]
+                    })
+                }
+            );
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error?.message || 'Erro desconhecido');
+            }
+
+            const data = await response.json();
+            const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+            if (responseText) {
+                this.showToast('✅ Conexão bem-sucedida! API Key válida', 'success');
+            } else {
+                throw new Error('Resposta inesperada da API');
+            }
+        } catch (error) {
+            console.error('Erro ao testar conexão:', error);
+            this.showToast(`❌ Erro: ${error.message}`, 'error');
+        }
+    }
+
+    hasMarkers(content) {
+        // Detecta se o arquivo tem marcadores de seção
+        const patterns = [
+            /\[SEÇÃO \d+\]/i,
+            /\[SECTION \d+\]/i,
+            /^===+$/m,
+            /^---+$/m,
+            /^\#{2,3}\s+/m  // ## Título ou ### Título
+        ];
+
+        return patterns.some(pattern => pattern.test(content));
+    }
+
+    async analyzeFileWithAI(file) {
+        if (!this.geminiApiKey) {
+            this.showToast('⚠️ Configure a API Key do Google Gemini primeiro', 'error');
+            document.getElementById('settingsModal').style.display = 'block';
+            return;
+        }
+
+        this.showToast('🤖 Analisando arquivo com IA...', 'info');
+
+        const prompt = `
+Analise este roteiro de documentário bíblico e identifique as seções principais.
+
+Retorne APENAS um JSON válido no formato:
+{
+  "sections": [
+    {
+      "title": "Título da seção",
+      "startLine": 0,
+      "endLine": 50,
+      "summary": "Breve resumo do conteúdo"
+    }
+  ],
+  "metadata": {
+    "mainTopic": "Tema principal",
+    "suggestedTitle": "Título sugerido para o vídeo"
+  }
+}
+
+Regras:
+- Identifique mudanças de tema, introdução/desenvolvimento/conclusão
+- startLine e endLine são números de linha (começando do 0)
+- Máximo de 5 seções
+- Seja conciso nos resumos
+
+ARQUIVO "${file.name}":
+${file.content}
+`;
+
+        try {
+            const response = await fetch(
+                `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${this.geminiApiKey}`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{ text: prompt }]
+                        }]
+                    })
+                }
+            );
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error?.message || 'Erro na API');
+            }
+
+            const data = await response.json();
+            const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+            if (!responseText) {
+                throw new Error('Resposta vazia da IA');
+            }
+
+            // Extrair JSON da resposta (pode vir com markdown)
+            const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+            if (!jsonMatch) {
+                throw new Error('IA não retornou JSON válido');
+            }
+
+            const analysis = JSON.parse(jsonMatch[0]);
+            this.showAISuggestions(file, analysis);
+
+        } catch (error) {
+            console.error('Erro ao analisar com IA:', error);
+            this.showToast(`❌ Erro na análise: ${error.message}`, 'error');
+        }
+    }
+
+    showAISuggestions(file, analysis) {
+        const modal = document.getElementById('aiSuggestionsModal');
+        const body = document.getElementById('aiSuggestionsBody');
+
+        if (!modal || !body) return;
+
+        const html = `
+            <div style="margin-bottom: 1.5rem;">
+                <h3 style="color: var(--accent-primary); margin: 0;">📄 ${file.name}</h3>
+                <p style="color: var(--text-secondary); margin-top: 0.5rem;">
+                    <strong>Tema:</strong> ${analysis.metadata?.mainTopic || 'Não identificado'}
+                </p>
+                ${analysis.metadata?.suggestedTitle ? `
+                    <p style="color: var(--text-secondary); margin-top: 0.5rem;">
+                        <strong>Título sugerido:</strong> ${analysis.metadata.suggestedTitle}
+                    </p>
+                ` : ''}
+            </div>
+
+            <h3 style="color: var(--accent-primary);">🎯 Seções detectadas (${analysis.sections.length})</h3>
+
+            <div style="max-height: 400px; overflow-y: auto;">
+                ${analysis.sections.map((section, index) => `
+                    <div style="background: var(--bg-hover); padding: 1rem; margin: 0.75rem 0; border-radius: var(--radius-sm); border-left: 4px solid var(--accent-primary);">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">
+                            <h4 style="margin: 0; color: var(--text-primary);">
+                                ${index + 1}. ${section.title}
+                            </h4>
+                            <span style="font-size: 0.85rem; color: var(--text-muted);">
+                                Linhas ${section.startLine}-${section.endLine}
+                            </span>
+                        </div>
+                        <p style="margin: 0; font-size: 0.9rem; color: var(--text-secondary);">
+                            ${section.summary}
+                        </p>
+                    </div>
+                `).join('')}
+            </div>
+
+            <div style="margin-top: 2rem; padding-top: 1rem; border-top: 2px solid var(--border-color);">
+                <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1rem;">
+                    A IA identificou ${analysis.sections.length} seção(ões) neste arquivo. Deseja aplicar estas divisões?
+                </p>
+                <div style="display: flex; gap: 0.75rem;">
+                    <button id="applyAISuggestionsButton" class="btn-primary" style="flex: 1;">
+                        ✅ Aplicar Sugestões
+                    </button>
+                    <button onclick="document.getElementById('aiSuggestionsModal').style.display='none'" class="btn-secondary" style="flex: 1;">
+                        ❌ Cancelar
+                    </button>
+                </div>
+            </div>
+        `;
+
+        body.innerHTML = html;
+        modal.style.display = 'block';
+
+        // Event listener para aplicar sugestões
+        document.getElementById('applyAISuggestionsButton')?.addEventListener('click', () => {
+            this.applyAISuggestions(file, analysis);
+            modal.style.display = 'none';
+        });
+    }
+
+    applyAISuggestions(file, analysis) {
+        // Criar marcadores no conteúdo do arquivo baseado nas sugestões
+        const lines = file.content.split('\n');
+        const newLines = [];
+
+        analysis.sections.forEach((section, index) => {
+            // Adicionar marcador de seção
+            if (index === 0 && section.startLine > 0) {
+                // Adicionar conteúdo antes da primeira seção
+                newLines.push(...lines.slice(0, section.startLine));
+            }
+
+            newLines.push(`[SEÇÃO ${index + 1}] ${section.title}`);
+            newLines.push(''); // Linha em branco
+
+            // Adicionar conteúdo da seção
+            const sectionContent = lines.slice(section.startLine, section.endLine + 1);
+            newLines.push(...sectionContent);
+            newLines.push(''); // Linha em branco entre seções
+        });
+
+        // Atualizar conteúdo do arquivo
+        file.content = newLines.join('\n');
+
+        // Re-parsear as seções
+        const project = this.projects[this.currentProject];
+        if (project) {
+            project.sections = this.parseAllSections(project);
+            this.saveToLocalStorage();
+            this.renderSections();
+            this.showToast(`✅ ${analysis.sections.length} seção(ões) aplicadas com sucesso!`, 'success');
+        }
     }
 
     // ========================================
