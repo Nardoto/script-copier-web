@@ -1,12 +1,12 @@
 // ========================================
 // SCRIPT COPIER WEB - Desktop Layout
 // Portado de ScriptCopier_UNIVERSAL.py
-// Version: 2.7.0 - Integração com IA (Google Gemini) - Modo Híbrido
+// Version: 2.7.1 - Correções: IndexedDB + Gemini API atualizada
 // ========================================
 
 class ScriptCopierApp {
     constructor() {
-        console.log('🚀 Script Copier v2.7.0 - Integração com IA (Google Gemini) - Modo Híbrido');
+        console.log('🚀 Script Copier v2.7.1 - Correções: IndexedDB + Gemini API atualizada');
 
         // Nova estrutura: múltiplas pastas raiz
         this.rootFolders = []; // Array de {id, name, handle, projects}
@@ -503,24 +503,38 @@ class ScriptCopierApp {
             const db = await this.openDatabase();
             const tx = db.transaction('rootFolders', 'readonly');
             const store = tx.objectStore('rootFolders');
-            const allKeys = await store.getAllKeys();
 
             this.rootFolders = [];
 
-            for (const key of allKeys) {
-                const data = await store.get(key);
-                if (data && data.handle) {
-                    this.rootFolders.push({
-                        id: data.id,
-                        name: data.name,
-                        handle: data.handle,
-                        projects: {}
-                    });
-                }
-            }
+            // Usar cursor em vez de getAllKeys para compatibilidade
+            const request = store.openCursor();
 
-            await tx.done;
-            console.log(`✅ ${this.rootFolders.length} pasta(s) raiz carregadas`);
+            return new Promise((resolve, reject) => {
+                request.onsuccess = (event) => {
+                    const cursor = event.target.result;
+                    if (cursor) {
+                        const data = cursor.value;
+                        if (data && data.handle) {
+                            this.rootFolders.push({
+                                id: data.id,
+                                name: data.name,
+                                handle: data.handle,
+                                projects: {}
+                            });
+                        }
+                        cursor.continue();
+                    } else {
+                        // Fim do cursor
+                        console.log(`✅ ${this.rootFolders.length} pasta(s) raiz carregadas`);
+                        resolve();
+                    }
+                };
+
+                request.onerror = () => {
+                    console.error('Erro ao carregar pastas raiz:', request.error);
+                    reject(request.error);
+                };
+            });
         } catch (err) {
             console.error('Erro ao carregar pastas raiz:', err);
         }
@@ -1482,7 +1496,7 @@ class ScriptCopierApp {
 
         try {
             const response = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${this.geminiApiKey}`,
+                `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${this.geminiApiKey}`,
                 {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -1566,7 +1580,7 @@ ${file.content}
 
         try {
             const response = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${this.geminiApiKey}`,
+                `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${this.geminiApiKey}`,
                 {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
