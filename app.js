@@ -1,12 +1,12 @@
 // ========================================
 // SCRIPT COPIER WEB - Desktop Layout
 // Portado de ScriptCopier_UNIVERSAL.py
-// Version: 2.7.4 - API Gemini atualizada conforme documentação oficial (v1beta + gemini-2.5-flash)
+// Version: 2.7.5 - hasMarkers() melhorado: detecta ACT, PART, CAPÍTULO, etc.
 // ========================================
 
 class ScriptCopierApp {
     constructor() {
-        console.log('🚀 Script Copier v2.7.4 - API Gemini atualizada conforme documentação oficial');
+        console.log('🚀 Script Copier v2.7.5 - hasMarkers() melhorado para detectar mais padrões de seções');
 
         // Nova estrutura: múltiplas pastas raiz
         this.rootFolders = []; // Array de {id, name, handle, projects}
@@ -1530,11 +1530,17 @@ class ScriptCopierApp {
     hasMarkers(content) {
         // Detecta se o arquivo tem marcadores de seção
         const patterns = [
-            /\[SEÇÃO \d+\]/i,
-            /\[SECTION \d+\]/i,
-            /^===+$/m,
-            /^---+$/m,
-            /^\#{2,3}\s+/m  // ## Título ou ### Título
+            /\[SEÇÃO \d+\]/i,                    // [SEÇÃO 1], [SEÇÃO 2]
+            /\[SECTION \d+\]/i,                  // [SECTION 1], [SECTION 2]
+            /^===+$/m,                           // ===
+            /^---+$/m,                           // ---
+            /^\#{2,3}\s+/m,                      // ## Título ou ### Título
+            /^ACT\s+[IVX]+:/im,                  // ACT I:, ACT II:, ACT IX:
+            /^ACT\s+\d+:/im,                     // ACT 1:, ACT 2:, ACT 9:
+            /^PART\s+\d+:/im,                    // PART 1:, PART 2:
+            /^PARTE\s+\d+:/im,                   // PARTE 1:, PARTE 2:
+            /^CAP[IÍ]TULO\s+\d+:/im,            // CAPÍTULO 1:, CAPÍTULO 2:
+            /^CHAPTER\s+\d+:/im                  // CHAPTER 1:, CHAPTER 2:
         ];
 
         return patterns.some(pattern => pattern.test(content));
