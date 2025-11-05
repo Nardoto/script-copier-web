@@ -1594,6 +1594,82 @@ class ScriptCopierApp {
         return patterns.some(pattern => pattern.test(content));
     }
 
+    showAIProgressModal(file) {
+        // Criar modal de progresso se não existir
+        let modal = document.getElementById('aiProgressModal');
+
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'aiProgressModal';
+            modal.className = 'modal';
+            modal.innerHTML = `
+                <div class="modal-content" style="max-width: 700px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                        <h2 style="margin: 0; color: var(--accent-primary); display: flex; align-items: center; gap: 0.5rem;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                                <path d="M2 17l10 5 10-5"/>
+                                <path d="M2 12l10 5 10-5"/>
+                            </svg>
+                            Análise de IA em Andamento
+                        </h2>
+                    </div>
+
+                    <div id="aiProgressContent" style="margin-bottom: 1.5rem;">
+                        <h3 style="color: var(--text-primary); margin: 0 0 0.5rem 0;">📄 <span id="aiProgressFileName"></span></h3>
+                        <div style="background: var(--bg-hover); padding: 1rem; border-radius: var(--radius-sm); max-height: 200px; overflow-y: auto; margin-bottom: 1rem;">
+                            <pre id="aiProgressFilePreview" style="margin: 0; font-size: 0.85rem; color: var(--text-secondary); white-space: pre-wrap; font-family: 'Courier New', monospace;"></pre>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 1rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                            <span id="aiProgressMessage" style="color: var(--text-secondary); font-weight: 500;">Iniciando...</span>
+                            <span id="aiProgressPercentage" style="color: var(--accent-primary); font-weight: 600; font-size: 1.1rem;">0%</span>
+                        </div>
+                        <div style="background: var(--bg-hover); border-radius: 10px; height: 20px; overflow: hidden;">
+                            <div id="aiProgressBar" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); height: 100%; width: 0%; transition: width 0.3s ease; border-radius: 10px;"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        // Preencher informações do arquivo
+        document.getElementById('aiProgressFileName').textContent = file.name;
+
+        // Mostrar preview do conteúdo (primeiras 1000 caracteres)
+        const preview = file.content.length > 1000
+            ? file.content.substring(0, 1000) + '\n\n... (arquivo continua)'
+            : file.content;
+        document.getElementById('aiProgressFilePreview').textContent = preview;
+
+        // Resetar progresso
+        document.getElementById('aiProgressBar').style.width = '0%';
+        document.getElementById('aiProgressPercentage').textContent = '0%';
+        document.getElementById('aiProgressMessage').textContent = 'Iniciando...';
+
+        // Mostrar modal
+        modal.style.display = 'block';
+    }
+
+    updateAIProgress(message, percentage) {
+        const modal = document.getElementById('aiProgressModal');
+        if (!modal) return;
+
+        document.getElementById('aiProgressMessage').textContent = message;
+        document.getElementById('aiProgressPercentage').textContent = `${percentage}%`;
+        document.getElementById('aiProgressBar').style.width = `${percentage}%`;
+    }
+
+    closeAIProgressModal() {
+        const modal = document.getElementById('aiProgressModal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+    }
+
     async analyzeFileWithAI(file) {
         if (!this.geminiApiKey) {
             this.showToast('⚠️ Configure a API Key do Google Gemini primeiro', 'error');
@@ -1601,10 +1677,20 @@ class ScriptCopierApp {
             return;
         }
 
-        this.showToast('🤖 Analisando arquivo com IA...', 'info');
+        // Mostrar modal de progresso
+        this.showAIProgressModal(file);
+        this.updateAIProgress('Preparando análise...', 10);
 
         const prompt = `
 Analise este roteiro de documentário bíblico e identifique TODAS as seções principais.
+
+CRITÉRIOS IMPORTANTES PARA DETECTAR MUDANÇAS DE SEÇÃO:
+1. Mudanças de tema ou tópico principal
+2. Espaçamento entre parágrafos (linhas em branco duplas ou triplas)
+3. Transições narrativas (introdução → desenvolvimento → conclusão)
+4. Mudanças de personagem ou foco narrativo
+5. Mudanças de contexto temporal ou geográfico
+6. Quebras visuais ou estruturais no texto
 
 Retorne APENAS um JSON válido no formato:
 {
@@ -1624,16 +1710,20 @@ Retorne APENAS um JSON válido no formato:
 
 Regras:
 - Identifique TODAS as mudanças de tema, introdução/desenvolvimento/conclusão
+- ATENÇÃO ESPECIAL: Espaçamentos maiores entre parágrafos (2+ linhas vazias) são fortes indicadores de nova seção
 - startLine e endLine são números de linha (começando do 0)
 - NÃO limite o número de seções - identifique quantas forem necessárias
 - Seja conciso nos resumos
 - Cada seção deve representar uma divisão lógica e natural do conteúdo
+- Prefira criar mais seções menores do que menos seções grandes
 
 ARQUIVO "${file.name}":
 ${file.content}
 `;
 
         try {
+            this.updateAIProgress('Enviando para IA...', 30);
+
             const response = await fetch(
                 `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${this.geminiApiKey}`,
                 {
@@ -1647,6 +1737,8 @@ ${file.content}
                 }
             );
 
+            this.updateAIProgress('Processando resposta...', 60);
+
             if (!response.ok) {
                 const error = await response.json();
                 throw new Error(error.error?.message || 'Erro na API');
@@ -1659,6 +1751,8 @@ ${file.content}
                 throw new Error('Resposta vazia da IA');
             }
 
+            this.updateAIProgress('Gerando sugestões...', 90);
+
             // Extrair JSON da resposta (pode vir com markdown)
             const jsonMatch = responseText.match(/\{[\s\S]*\}/);
             if (!jsonMatch) {
@@ -1666,10 +1760,18 @@ ${file.content}
             }
 
             const analysis = JSON.parse(jsonMatch[0]);
-            this.showAISuggestions(file, analysis);
+
+            this.updateAIProgress('Concluído!', 100);
+
+            // Fechar modal de progresso e mostrar sugestões
+            setTimeout(() => {
+                this.closeAIProgressModal();
+                this.showAISuggestions(file, analysis);
+            }, 500);
 
         } catch (error) {
             console.error('Erro ao analisar com IA:', error);
+            this.closeAIProgressModal();
             this.showToast(`❌ Erro na análise: ${error.message}`, 'error');
         }
     }
