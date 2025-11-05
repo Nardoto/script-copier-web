@@ -1,12 +1,12 @@
 // ========================================
 // SCRIPT COPIER WEB - Desktop Layout
 // Portado de ScriptCopier_UNIVERSAL.py
-// Version: 2.8.1 - Tradutor melhorado: barra de progresso + comparação lado a lado
+// Version: 2.8.2 - Correção: erro no modal de progresso da tradução
 // ========================================
 
 class ScriptCopierApp {
     constructor() {
-        console.log('🚀 Script Copier v2.8.1 - Tradutor com progresso e comparação lado a lado');
+        console.log('🚀 Script Copier v2.8.2 - Tradutor com progresso corrigido');
 
         // Nova estrutura: múltiplas pastas raiz
         this.rootFolders = []; // Array de {id, name, handle, projects}
@@ -1782,7 +1782,10 @@ class ScriptCopierApp {
         const targetLanguage = languageMap[languageSelector.value];
 
         // Mostrar barra de progresso
-        this.showAIProgressModal({ name: this.currentSection.title });
+        this.showAIProgressModal({
+            name: this.currentSection.title,
+            content: this.currentSection.text
+        });
         this.updateAIProgress('Preparando tradução...', 10);
 
         const prompt = `
