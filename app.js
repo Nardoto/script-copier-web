@@ -8,6 +8,7 @@ class ScriptCopierApp {
         this.projects = {};
         this.currentProject = null;
         this.currentSection = null;
+        this.currentFile = null;
         this.copyHistory = this.loadHistory();
         this.youtubeData = this.loadYoutubeData();
         this.directoryHandle = null;
@@ -66,6 +67,11 @@ class ScriptCopierApp {
 
         document.getElementById('saveTextButton')?.addEventListener('click', () => {
             this.saveCurrentSection();
+        });
+
+        // File preview copy button
+        document.getElementById('copyFileButton')?.addEventListener('click', () => {
+            this.copyCurrentFile();
         });
 
         // YouTube form
@@ -488,6 +494,7 @@ class ScriptCopierApp {
 
         this.currentProject = projectName;
         this.currentSection = null;
+        this.currentFile = null;
 
         document.getElementById('projectDropdown').value = projectName;
         document.getElementById('folderPathDisplay').textContent = this.projects[projectName].path || projectName;
@@ -496,6 +503,7 @@ class ScriptCopierApp {
         this.renderFiles();
         this.loadYoutubeDataForProject(projectName);
         this.clearPreview();
+        this.clearFilePreview();
     }
 
     renderSections() {
@@ -614,9 +622,10 @@ class ScriptCopierApp {
         // Sort files by name
         const sortedFiles = [...project.files].sort((a, b) => a.name.localeCompare(b.name));
 
-        sortedFiles.forEach(file => {
+        sortedFiles.forEach((file, index) => {
             const item = document.createElement('div');
             item.className = 'file-item';
+            item.dataset.index = index;
 
             const sizeKB = (file.size / 1024).toFixed(2);
 
@@ -626,16 +635,79 @@ class ScriptCopierApp {
             `;
 
             item.addEventListener('click', () => {
-                this.viewFile(file);
+                this.viewFile(file, index);
             });
 
             container.appendChild(item);
         });
     }
 
-    viewFile(file) {
-        // Open file content in preview (could be expanded)
-        this.showToast(`Arquivo: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`, 'info');
+    viewFile(file, index) {
+        const preview = document.getElementById('fileContentPreview');
+        const actions = document.getElementById('fileContentActions');
+        const fileInfo = document.getElementById('fileInfoDisplay');
+        const columnTitle = document.querySelector('.file-content-column .column-title');
+
+        if (!preview || !actions) return;
+
+        // Update active state
+        document.querySelectorAll('.file-item').forEach((item, i) => {
+            item.classList.toggle('active', i === index);
+        });
+
+        // Update title
+        if (columnTitle) {
+            columnTitle.innerHTML = `
+                <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+                    <path d="M4 4h12v12H4V4z" stroke="currentColor" stroke-width="2"/>
+                    <path d="M7 7h6M7 10h6M7 13h4" stroke="currentColor" stroke-width="2"/>
+                </svg>
+                ${file.name}
+            `;
+        }
+
+        // Show content
+        preview.textContent = file.content;
+        actions.style.display = 'flex';
+
+        // Show file info
+        const sizeKB = (file.size / 1024).toFixed(2);
+        const wordCount = this.countWords(file.content);
+        fileInfo.textContent = `${sizeKB} KB • ${wordCount} palavras`;
+
+        // Store current file for copy
+        this.currentFile = file;
+    }
+
+    clearFilePreview() {
+        const preview = document.getElementById('fileContentPreview');
+        const actions = document.getElementById('fileContentActions');
+        const columnTitle = document.querySelector('.file-content-column .column-title');
+
+        if (!preview) return;
+
+        preview.innerHTML = `
+            <div class="empty-message">
+                <svg width="60" height="60" viewBox="0 0 20 20" fill="none" style="opacity: 0.3;">
+                    <path d="M4 4h12v12H4V4z" stroke="currentColor" stroke-width="2"/>
+                </svg>
+                <p>Selecione um arquivo ao lado para visualizar</p>
+            </div>
+        `;
+
+        if (actions) actions.style.display = 'none';
+
+        if (columnTitle) {
+            columnTitle.innerHTML = `
+                <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+                    <path d="M4 4h12v12H4V4z" stroke="currentColor" stroke-width="2"/>
+                    <path d="M7 7h6M7 10h6M7 13h4" stroke="currentColor" stroke-width="2"/>
+                </svg>
+                Selecione um roteiro e arquivo
+            `;
+        }
+
+        this.currentFile = null;
     }
 
     // ========================================
@@ -668,6 +740,18 @@ class ScriptCopierApp {
         } catch (err) {
             console.error('Erro ao copiar:', err);
             this.showToast('Erro ao copiar texto', 'error');
+        }
+    }
+
+    async copyCurrentFile() {
+        if (!this.currentFile) return;
+
+        try {
+            await navigator.clipboard.writeText(this.currentFile.content);
+            this.showToast(`✅ Arquivo "${this.currentFile.name}" copiado!`, 'success');
+        } catch (err) {
+            console.error('Erro ao copiar arquivo:', err);
+            this.showToast('Erro ao copiar arquivo', 'error');
         }
     }
 
