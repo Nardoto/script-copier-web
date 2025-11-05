@@ -425,25 +425,38 @@ class ScriptCopierApp {
         };
 
         try {
-            // Extrair títulos (OPÇÃO 1 a 5) - captura múltiplas linhas
-            const titleRegex = /OPÇÃO\s+(\d+):\s*\n([\s\S]+?)(?=\n\nOPÇÃO|\n\n━|$)/g;
+            // Debug: Log para verificar o conteúdo
+            console.log('Parseando conteúdo do YouTube:', content.substring(0, 500));
+
+            // Extrair títulos (OPÇÃO 1 a 5) - agora corrigido para o formato real
+            // Buscar por OPÇÃO X: seguido de quebra de linha e o texto até a próxima linha vazia
+            const titleRegex = /OPÇÃO\s+(\d+):\s*\n(.*?)(?:\n\n|\n━|$)/g;
             let match;
+            let titleCount = 0;
+
             while ((match = titleRegex.exec(content)) !== null) {
                 const optionNum = parseInt(match[1]);
                 const title = match[2].trim();
+                console.log(`Título encontrado - OPÇÃO ${optionNum}: ${title}`);
                 data.titles[optionNum - 1] = title;
+                titleCount++;
             }
 
+            console.log(`Total de títulos encontrados: ${titleCount}`);
+            console.log('Array de títulos:', data.titles);
+
             // Extrair descrição
-            const descMatch = content.match(/DESCRIÇÃO PARA YOUTUBE:\s*\n\n([\s\S]+?)(?=\n\n━|$)/);
+            const descMatch = content.match(/DESCRIÇÃO PARA YOUTUBE:\s*\n\n([\s\S]+?)(?=\n━|$)/);
             if (descMatch) {
                 data.description = descMatch[1].trim();
+                console.log('Descrição encontrada:', data.description.substring(0, 100) + '...');
             }
 
             // Extrair ideias para thumbnail
             const thumbnailMatch = content.match(/IDEIA PARA THUMBNAIL:\s*\n\n([\s\S]+?)$/);
             if (thumbnailMatch) {
                 data.thumbnail = thumbnailMatch[1].trim();
+                console.log('Thumbnail encontrada:', data.thumbnail.substring(0, 100) + '...');
             }
         } catch (err) {
             console.error('Erro ao parsear dados do YouTube:', err);
@@ -833,13 +846,16 @@ class ScriptCopierApp {
     loadYoutubeDataForProject(projectName) {
         let data = this.youtubeData[projectName] || {};
 
-        // Se não tem dados salvos, tentar carregar do arquivo 05_Titulo_Descricao.txt
-        if (!data.title1 && this.projects[projectName]) {
+        // SEMPRE tentar carregar do arquivo 05_Titulo_Descricao.txt para garantir dados atualizados
+        if (this.projects[projectName]) {
             const youtubeFile = this.projects[projectName].files.find(f =>
                 f.name.includes('05_Titulo_Descricao') || f.name.includes('05_Titulo_Descrição')
             );
 
             if (youtubeFile) {
+                // Limpar dados antigos para forçar reparse
+                delete this.youtubeData[projectName];
+
                 const parsedData = this.parseYoutubeDataFromFile(youtubeFile.content);
 
                 // Preencher com dados do arquivo

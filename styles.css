@@ -541,10 +541,19 @@ body {
     flex-direction: column;
 }
 
+/* Tornando a coluna de arquivos fixa durante o scroll */
+.files-column {
+    position: sticky;
+    top: 0;
+    height: calc(100vh - 250px);
+    align-self: flex-start;
+}
+
 .files-list-sidebar {
     flex: 1;
     overflow-y: auto;
     padding-right: 0.5rem;
+    max-height: calc(100vh - 350px);
 }
 
 .file-item {
