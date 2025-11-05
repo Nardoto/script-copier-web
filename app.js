@@ -1,12 +1,12 @@
 // ========================================
 // SCRIPT COPIER WEB - Desktop Layout
 // Portado de ScriptCopier_UNIVERSAL.py
-// Version: 2.7.7 - Barra de progresso para análise de IA + prompt melhorado
+// Version: 2.7.8 - IA mostra conteúdo REAL ao invés de títulos gerados
 // ========================================
 
 class ScriptCopierApp {
     constructor() {
-        console.log('🚀 Script Copier v2.7.7 - Modal de progresso para IA + detecção de espaçamento entre parágrafos');
+        console.log('🚀 Script Copier v2.7.8 - IA mostra conteúdo REAL do arquivo (cortador inteligente)');
 
         // Nova estrutura: múltiplas pastas raiz
         this.rootFolders = []; // Array de {id, name, handle, projects}
@@ -1682,9 +1682,11 @@ class ScriptCopierApp {
         this.updateAIProgress('Preparando análise...', 10);
 
         const prompt = `
-Analise este roteiro de documentário bíblico e identifique TODAS as seções principais.
+Analise este roteiro de documentário bíblico e identifique ONDE fazer as divisões em seções.
 
-CRITÉRIOS IMPORTANTES PARA DETECTAR MUDANÇAS DE SEÇÃO:
+VOCÊ É UM "CORTADOR INTELIGENTE" - Sua função é APENAS detectar ONDE cortar o texto em seções naturais.
+
+CRITÉRIOS IMPORTANTES PARA DETECTAR ONDE CORTAR:
 1. Mudanças de tema ou tópico principal
 2. Espaçamento entre parágrafos (linhas em branco duplas ou triplas)
 3. Transições narrativas (introdução → desenvolvimento → conclusão)
@@ -1696,24 +1698,23 @@ Retorne APENAS um JSON válido no formato:
 {
   "sections": [
     {
-      "title": "Título da seção",
       "startLine": 0,
-      "endLine": 50,
-      "summary": "Breve resumo do conteúdo"
+      "endLine": 50
+    },
+    {
+      "startLine": 51,
+      "endLine": 100
     }
-  ],
-  "metadata": {
-    "mainTopic": "Tema principal",
-    "suggestedTitle": "Título sugerido para o vídeo"
-  }
+  ]
 }
 
-Regras:
+Regras IMPORTANTES:
+- NÃO invente títulos - retorne APENAS os números das linhas (startLine, endLine)
+- NÃO crie resumos - retorne APENAS onde cortar
 - Identifique TODAS as mudanças de tema, introdução/desenvolvimento/conclusão
 - ATENÇÃO ESPECIAL: Espaçamentos maiores entre parágrafos (2+ linhas vazias) são fortes indicadores de nova seção
 - startLine e endLine são números de linha (começando do 0)
 - NÃO limite o número de seções - identifique quantas forem necessárias
-- Seja conciso nos resumos
 - Cada seção deve representar uma divisão lógica e natural do conteúdo
 - Prefira criar mais seções menores do que menos seções grandes
 
@@ -1782,37 +1783,49 @@ ${file.content}
 
         if (!modal || !body) return;
 
+        // Dividir conteúdo do arquivo em linhas para extrair conteúdo REAL
+        const lines = file.content.split('\n');
+
         const html = `
             <div style="margin-bottom: 1.5rem;">
                 <h3 style="color: var(--accent-primary); margin: 0;">📄 ${file.name}</h3>
                 <p style="color: var(--text-secondary); margin-top: 0.5rem;">
-                    <strong>Tema:</strong> ${analysis.metadata?.mainTopic || 'Não identificado'}
+                    A IA detectou ${analysis.sections.length} divisão(ões) natural(is) neste arquivo
                 </p>
-                ${analysis.metadata?.suggestedTitle ? `
-                    <p style="color: var(--text-secondary); margin-top: 0.5rem;">
-                        <strong>Título sugerido:</strong> ${analysis.metadata.suggestedTitle}
-                    </p>
-                ` : ''}
             </div>
 
             <h3 style="color: var(--accent-primary);">🎯 Seções detectadas (${analysis.sections.length})</h3>
 
             <div style="max-height: 400px; overflow-y: auto;">
-                ${analysis.sections.map((section, index) => `
-                    <div style="background: var(--bg-hover); padding: 1rem; margin: 0.75rem 0; border-radius: var(--radius-sm); border-left: 4px solid var(--accent-primary);">
-                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">
-                            <h4 style="margin: 0; color: var(--text-primary);">
-                                ${index + 1}. ${section.title}
-                            </h4>
-                            <span style="font-size: 0.85rem; color: var(--text-muted);">
-                                Linhas ${section.startLine}-${section.endLine}
-                            </span>
+                ${analysis.sections.map((section, index) => {
+                    // Extrair conteúdo REAL da seção
+                    const sectionLines = lines.slice(section.startLine, section.endLine + 1);
+
+                    // Primeira linha não vazia como título
+                    const firstLine = sectionLines.find(line => line.trim() !== '') || 'Seção sem título';
+
+                    // Preview do conteúdo (primeiras 150 caracteres)
+                    const contentPreview = sectionLines.join('\n').trim();
+                    const preview = contentPreview.length > 150
+                        ? contentPreview.substring(0, 150) + '...'
+                        : contentPreview;
+
+                    return `
+                        <div style="background: var(--bg-hover); padding: 1rem; margin: 0.75rem 0; border-radius: var(--radius-sm); border-left: 4px solid var(--accent-primary);">
+                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">
+                                <h4 style="margin: 0; color: var(--text-primary);">
+                                    ${index + 1}. ${firstLine.trim()}
+                                </h4>
+                                <span style="font-size: 0.85rem; color: var(--text-muted);">
+                                    Linhas ${section.startLine}-${section.endLine}
+                                </span>
+                            </div>
+                            <p style="margin: 0; font-size: 0.9rem; color: var(--text-secondary); white-space: pre-wrap; font-family: 'Courier New', monospace;">
+                                ${preview}
+                            </p>
                         </div>
-                        <p style="margin: 0; font-size: 0.9rem; color: var(--text-secondary);">
-                            ${section.summary}
-                        </p>
-                    </div>
-                `).join('')}
+                    `;
+                }).join('')}
             </div>
 
             <div style="margin-top: 2rem; padding-top: 1rem; border-top: 2px solid var(--border-color);">
@@ -1852,12 +1865,16 @@ ${file.content}
                 newLines.push(...lines.slice(0, section.startLine));
             }
 
-            newLines.push(`[SEÇÃO ${index + 1}] ${section.title}`);
+            // Extrair primeira linha REAL do conteúdo para usar como título
+            const sectionLines = lines.slice(section.startLine, section.endLine + 1);
+            const firstLine = sectionLines.find(line => line.trim() !== '') || 'Seção';
+
+            // Adicionar marcador com primeira linha REAL do conteúdo
+            newLines.push(`[SEÇÃO ${index + 1}] ${firstLine.trim()}`);
             newLines.push(''); // Linha em branco
 
             // Adicionar conteúdo da seção
-            const sectionContent = lines.slice(section.startLine, section.endLine + 1);
-            newLines.push(...sectionContent);
+            newLines.push(...sectionLines);
             newLines.push(''); // Linha em branco entre seções
         });
 
