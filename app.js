@@ -1,12 +1,12 @@
 // ========================================
 // SCRIPT COPIER WEB - Desktop Layout
 // Portado de ScriptCopier_UNIVERSAL.py
-// Version: 2.1.0 - Fixed YouTube titles and sticky files
+// Version: 2.2.0 - Fixed YouTube parsing (matching Python) and sticky files
 // ========================================
 
 class ScriptCopierApp {
     constructor() {
-        console.log('🚀 Script Copier v2.1.0 - Com correções de títulos e sticky');
+        console.log('🚀 Script Copier v2.2.0 - Parser igual ao Python');
         this.projects = {};
         this.currentProject = null;
         this.currentSection = null;
@@ -432,41 +432,40 @@ class ScriptCopierApp {
         };
 
         try {
-            // Debug: Log para verificar o conteúdo
-            console.log('Parseando conteúdo do YouTube:', content.substring(0, 500));
+            console.log('📄 Parse YouTube - Iniciando...');
 
-            // Extrair títulos (OPÇÃO 1 a 5) - corrigido para capturar títulos multi-linha
-            // Buscar por OPÇÃO X: seguido do conteúdo até a próxima OPÇÃO ou separador
-            const titleRegex = /OPÇÃO\s+(\d+):\s*\n([\s\S]*?)(?=\nOPÇÃO\s+\d+:|\n━|$)/g;
-            let match;
-            let titleCount = 0;
-
-            while ((match = titleRegex.exec(content)) !== null) {
-                const optionNum = parseInt(match[1]);
-                const title = match[2].trim().replace(/\n+/g, ' '); // Remove quebras de linha extras
-                console.log(`Título encontrado - OPÇÃO ${optionNum}: ${title}`);
-                data.titles[optionNum - 1] = title;
-                titleCount++;
+            // Extrair títulos (OPÇÃO 1 a 5) - igual ao Python
+            for (let i = 1; i <= 5; i++) {
+                const padrao = new RegExp(`OPÇÃO\\s+${i}:([\\s\\S]*?)(?=OPÇÃO\\s+${i + 1}:|━|$)`, 'i');
+                const match = content.match(padrao);
+                if (match) {
+                    const titulo = match[1].trim();
+                    data.titles[i - 1] = titulo;
+                    console.log(`✅ Título ${i}: ${titulo}`);
+                }
             }
 
-            console.log(`Total de títulos encontrados: ${titleCount}`);
-            console.log('Array de títulos:', data.titles);
-
-            // Extrair descrição
-            const descMatch = content.match(/DESCRIÇÃO PARA YOUTUBE:\s*\n\n([\s\S]+?)(?=\n━|$)/);
+            // Extrair descrição - igual ao Python
+            const descMatch = content.match(/DESCRIÇÃO PARA YOUTUBE:([\s\S]*?)(?=━|IDEIA PARA THUMBNAIL:|$)/i);
             if (descMatch) {
                 data.description = descMatch[1].trim();
-                console.log('Descrição encontrada:', data.description.substring(0, 100) + '...');
+                console.log('✅ Descrição:', data.description.substring(0, 100) + '...');
+            } else {
+                console.log('❌ Descrição NÃO encontrada');
             }
 
-            // Extrair ideias para thumbnail
-            const thumbnailMatch = content.match(/IDEIA PARA THUMBNAIL:\s*\n\n([\s\S]+?)$/);
+            // Extrair thumbnail - igual ao Python
+            const thumbnailMatch = content.match(/IDEIA PARA THUMBNAIL:([\s\S]*?)$/i);
             if (thumbnailMatch) {
                 data.thumbnail = thumbnailMatch[1].trim();
-                console.log('Thumbnail encontrada:', data.thumbnail.substring(0, 100) + '...');
+                console.log('✅ Thumbnail:', data.thumbnail.substring(0, 100) + '...');
+            } else {
+                console.log('❌ Thumbnail NÃO encontrada');
             }
+
+            console.log('📊 Total de títulos encontrados:', data.titles.filter(t => t).length);
         } catch (err) {
-            console.error('Erro ao parsear dados do YouTube:', err);
+            console.error('❌ Erro ao parsear dados do YouTube:', err);
         }
 
         return data;
@@ -864,9 +863,7 @@ class ScriptCopierApp {
 
             if (youtubeFile) {
                 console.log('📄 Arquivo YouTube encontrado:', youtubeFile.name);
-                console.log('📋 Conteúdo do arquivo (primeiras 500 letras):', youtubeFile.content.substring(0, 500));
                 const parsedData = this.parseYoutubeDataFromFile(youtubeFile.content);
-                console.log('✅ Dados parseados:', parsedData);
 
                 // Preencher com dados do arquivo
                 data = {

@@ -539,13 +539,10 @@ body {
 .files-column {
     display: flex;
     flex-direction: column;
-    position: sticky !important;
-    top: 0 !important;
-    height: calc(100vh - 300px);
-    align-self: start;
-    border: 3px solid red !important; /* DEBUG - remover depois */
-    background: white;
-    z-index: 10;
+    position: sticky;
+    top: 20px;
+    max-height: calc(100vh - 250px);
+    align-self: flex-start;
 }
 
 .file-content-column {
