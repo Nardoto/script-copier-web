@@ -10,6 +10,11 @@ class ScriptCopierApp {
         this.currentSection = null;
         this.currentFile = null;
         this.copyHistory = this.loadHistory();
+
+        // Limpar dados do YouTube para forçar reparse (temporário - remover depois de testar)
+        localStorage.removeItem('youtubeData');
+        console.log('🔄 Cache do YouTube limpo para forçar reparse dos títulos');
+
         this.youtubeData = this.loadYoutubeData();
         this.directoryHandle = null;
         this.init();
