@@ -69,28 +69,37 @@ class ScriptCopierApp {
     async handleFileUpload(files) {
         if (files.length === 0) return;
 
-        this.showToast('Processando arquivos...', 'info');
+        this.showToast('Processando estrutura de pastas...', 'info');
 
-        // Group files by project (folder structure simulation)
+        // Group files by project (actual folder structure)
         const projectMap = {};
 
         for (const file of files) {
+            // Only process .txt files
             if (!file.name.endsWith('.txt')) continue;
 
-            const content = await this.readFile(file);
-            const projectName = this.extractProjectName(file.name);
+            // Extract project name from file path
+            const projectName = this.extractProjectNameFromPath(file.webkitRelativePath || file.name);
 
+            if (!projectName) continue;
+
+            // Create project if doesn't exist
             if (!projectMap[projectName]) {
                 projectMap[projectName] = {
                     name: projectName,
-                    files: []
+                    files: [],
+                    path: this.extractProjectPath(file.webkitRelativePath)
                 };
             }
+
+            // Read file content
+            const content = await this.readFile(file);
 
             projectMap[projectName].files.push({
                 name: file.name,
                 content: content,
-                size: file.size
+                size: file.size,
+                relativePath: file.webkitRelativePath
             });
         }
 
@@ -102,7 +111,33 @@ class ScriptCopierApp {
 
         this.saveToLocalStorage();
         this.renderProjects();
-        this.showToast(`${Object.keys(projectMap).length} projeto(s) carregado(s)!`, 'success');
+
+        const projectCount = Object.keys(projectMap).length;
+        const fileCount = Object.values(projectMap).reduce((sum, p) => sum + p.files.length, 0);
+        this.showToast(`${projectCount} projeto(s) • ${fileCount} arquivo(s) carregados!`, 'success');
+    }
+
+    extractProjectNameFromPath(path) {
+        if (!path) return null;
+
+        // Path format: "RootFolder/ProjectFolder/file.txt"
+        // We want "ProjectFolder"
+        const parts = path.split('/');
+
+        if (parts.length < 2) {
+            // No subfolder, use root as project name
+            return parts[0] || 'Projeto Principal';
+        }
+
+        // Get the folder name (second to last part, before filename)
+        return parts[parts.length - 2];
+    }
+
+    extractProjectPath(path) {
+        if (!path) return '';
+        const parts = path.split('/');
+        parts.pop(); // Remove filename
+        return parts.join('/');
     }
 
     readFile(file) {
@@ -111,15 +146,6 @@ class ScriptCopierApp {
             reader.onload = (e) => resolve(e.target.result);
             reader.readAsText(file, 'UTF-8');
         });
-    }
-
-    extractProjectName(filename) {
-        // Remove extensão e números iniciais
-        return filename
-            .replace(/\.txt$/i, '')
-            .replace(/^\d+_/, '')
-            .replace(/_/g, ' ')
-            .trim() || 'Projeto Sem Nome';
     }
 
     // ========================================

@@ -24,9 +24,9 @@
                         <path d="M10 3V17M10 3L6 7M10 3L14 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                         <path d="M3 13V15C3 16.1046 3.89543 17 5 17H15C16.1046 17 17 16.1046 17 15V13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                     </svg>
-                    Carregar Roteiros
+                    Carregar Pasta de Roteiros
                 </button>
-                <input type="file" id="fileInput" multiple accept=".txt" style="display: none;">
+                <input type="file" id="fileInput" webkitdirectory directory multiple style="display: none;">
             </div>
         </div>
     </header>
@@ -40,8 +40,9 @@
                     <path d="M20 26.6667L40 13.3334L60 26.6667V53.3334L40 66.6667L20 53.3334V26.6667Z" stroke="#cb6246" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
                     <path d="M20 26.6667L40 40L60 26.6667M40 66.6667V40" stroke="#cb6246" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
-                <h2>Nenhum roteiro carregado</h2>
-                <p>Clique em "Carregar Roteiros" para começar</p>
+                <h2>Nenhuma pasta carregada</h2>
+                <p>Clique em "Carregar Pasta de Roteiros" e selecione a pasta raiz contendo as subpastas dos seus projetos</p>
+                <p style="font-size: 0.9rem; color: var(--text-muted); margin-top: 1rem;">📂 Estrutura esperada: Pasta Raiz → Subpastas (Projetos) → Arquivos .txt</p>
             </div>
             <div id="projectList" class="project-list" style="display: none;"></div>
         </div>
