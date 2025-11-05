@@ -1,12 +1,12 @@
 // ========================================
 // SCRIPT COPIER WEB - Desktop Layout
 // Portado de ScriptCopier_UNIVERSAL.py
-// Version: 2.7.9 - Botão Abrir Pasta + Dropdowns não-selecionáveis + Debug logs
+// Version: 2.8.0 - Tradutor de Roteiro com IA (substituiu divisão automática)
 // ========================================
 
 class ScriptCopierApp {
     constructor() {
-        console.log('🚀 Script Copier v2.7.9 - Botão Abrir Pasta + Placeholders corrigidos + Debug logs');
+        console.log('🚀 Script Copier v2.8.0 - Tradutor de Roteiro com Gemini AI');
 
         // Nova estrutura: múltiplas pastas raiz
         this.rootFolders = []; // Array de {id, name, handle, projects}
@@ -174,9 +174,9 @@ class ScriptCopierApp {
             this.testGeminiConnection();
         });
 
-        // AI Section Detector - Copy Tab
-        document.getElementById('divideWithAIButton')?.addEventListener('click', () => {
-            this.divideSelectedFileWithAI();
+        // AI Translator - Copy Tab
+        document.getElementById('translateButton')?.addEventListener('click', () => {
+            this.translateCurrentSection();
         });
 
         // Keyboard shortcuts
@@ -933,34 +933,21 @@ class ScriptCopierApp {
         this.loadYoutubeDataForProject(projectName);
         this.clearPreview();
         this.clearFilePreview();
-        this.populateAIFileSelector();
+        this.showTranslatorPanel();
     }
 
-    populateAIFileSelector() {
-        const selector = document.getElementById('aiFileSelector');
-        const panel = document.getElementById('aiSectionDetectorPanel');
-
-        if (!selector || !panel || !this.currentProject) return;
+    showTranslatorPanel() {
+        const panel = document.getElementById('aiTranslatorPanel');
+        if (!panel || !this.currentProject) return;
 
         const project = this.projects[this.currentProject];
-        if (!project || !project.files || project.files.length === 0) {
+        if (!project || !project.sections || project.sections.length === 0) {
             panel.style.display = 'none';
             return;
         }
 
-        // Mostrar painel
+        // Mostrar painel se houver seções
         panel.style.display = 'block';
-
-        // Limpar dropdown
-        selector.innerHTML = '<option value="" disabled selected>Selecione um arquivo...</option>';
-
-        // Adicionar arquivos
-        project.files.forEach((file, index) => {
-            const option = document.createElement('option');
-            option.value = index;
-            option.textContent = file.name;
-            selector.appendChild(option);
-        });
     }
 
     renderSections() {
@@ -1758,61 +1745,60 @@ class ScriptCopierApp {
         }
     }
 
-    async analyzeFileWithAI(file) {
+    // ========================================
+    // AI TRANSLATOR
+    // ========================================
+
+    async translateCurrentSection() {
+        // Verificar se há seção selecionada
+        if (!this.currentSection) {
+            this.showToast('⚠️ Selecione uma seção primeiro', 'error');
+            return;
+        }
+
+        // Verificar API Key
         if (!this.geminiApiKey) {
             this.showToast('⚠️ Configure a API Key do Google Gemini primeiro', 'error');
             document.getElementById('settingsModal').style.display = 'block';
             return;
         }
 
-        // Mostrar modal de progresso
-        this.showAIProgressModal(file);
-        this.updateAIProgress('Preparando análise...', 10);
+        // Pegar idioma selecionado
+        const languageSelector = document.getElementById('translateLanguageSelector');
+        if (!languageSelector || !languageSelector.value) {
+            this.showToast('⚠️ Selecione um idioma primeiro', 'error');
+            return;
+        }
+
+        const languageMap = {
+            'english': 'Inglês',
+            'spanish': 'Espanhol',
+            'french': 'Francês',
+            'italian': 'Italiano',
+            'german': 'Alemão'
+        };
+
+        const targetLanguage = languageMap[languageSelector.value];
+
+        this.showToast(`🌐 Traduzindo para ${targetLanguage}...`, 'info');
 
         const prompt = `
-Analise este roteiro de documentário bíblico e identifique ONDE fazer as divisões em seções.
+Traduza o seguinte texto de roteiro de documentário bíblico para ${targetLanguage}.
 
-VOCÊ É UM "CORTADOR INTELIGENTE" - Sua função é APENAS detectar ONDE cortar o texto em seções naturais.
+INSTRUÇÕES IMPORTANTES:
+- Mantenha o estilo narrativo e tom do original
+- Preserve nomes próprios bíblicos (Jesus, Jerusalém, etc.)
+- Use linguagem natural e fluente no idioma de destino
+- Mantenha a formatação e parágrafos
+- NÃO adicione comentários ou explicações, apenas a tradução
 
-CRITÉRIOS IMPORTANTES PARA DETECTAR ONDE CORTAR:
-1. Mudanças de tema ou tópico principal
-2. Espaçamento entre parágrafos (linhas em branco duplas ou triplas)
-3. Transições narrativas (introdução → desenvolvimento → conclusão)
-4. Mudanças de personagem ou foco narrativo
-5. Mudanças de contexto temporal ou geográfico
-6. Quebras visuais ou estruturais no texto
+TEXTO ORIGINAL (Português):
+${this.currentSection.text}
 
-Retorne APENAS um JSON válido no formato:
-{
-  "sections": [
-    {
-      "startLine": 0,
-      "endLine": 50
-    },
-    {
-      "startLine": 51,
-      "endLine": 100
-    }
-  ]
-}
-
-Regras IMPORTANTES:
-- NÃO invente títulos - retorne APENAS os números das linhas (startLine, endLine)
-- NÃO crie resumos - retorne APENAS onde cortar
-- Identifique TODAS as mudanças de tema, introdução/desenvolvimento/conclusão
-- ATENÇÃO ESPECIAL: Espaçamentos maiores entre parágrafos (2+ linhas vazias) são fortes indicadores de nova seção
-- startLine e endLine são números de linha (começando do 0)
-- NÃO limite o número de seções - identifique quantas forem necessárias
-- Cada seção deve representar uma divisão lógica e natural do conteúdo
-- Prefira criar mais seções menores do que menos seções grandes
-
-ARQUIVO "${file.name}":
-${file.content}
+TRADUÇÃO PARA ${targetLanguage.toUpperCase()}:
 `;
 
         try {
-            this.updateAIProgress('Enviando para IA...', 30);
-
             const response = await fetch(
                 `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${this.geminiApiKey}`,
                 {
@@ -1826,192 +1812,71 @@ ${file.content}
                 }
             );
 
-            this.updateAIProgress('Processando resposta...', 60);
-
             if (!response.ok) {
                 const error = await response.json();
                 throw new Error(error.error?.message || 'Erro na API');
             }
 
             const data = await response.json();
-            const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            const translatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
-            if (!responseText) {
+            if (!translatedText) {
                 throw new Error('Resposta vazia da IA');
             }
 
-            this.updateAIProgress('Gerando sugestões...', 90);
-
-            // Extrair JSON da resposta (pode vir com markdown)
-            const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-            if (!jsonMatch) {
-                throw new Error('IA não retornou JSON válido');
-            }
-
-            const analysis = JSON.parse(jsonMatch[0]);
-
-            this.updateAIProgress('Concluído!', 100);
-
-            // Fechar modal de progresso e mostrar sugestões
-            setTimeout(() => {
-                this.closeAIProgressModal();
-                this.showAISuggestions(file, analysis);
-            }, 500);
+            // Mostrar resultado em modal
+            this.showTranslationResult(this.currentSection.title, targetLanguage, translatedText);
 
         } catch (error) {
-            console.error('Erro ao analisar com IA:', error);
-            this.closeAIProgressModal();
-            this.showToast(`❌ Erro na análise: ${error.message}`, 'error');
+            console.error('Erro ao traduzir:', error);
+            this.showToast(`❌ Erro na tradução: ${error.message}`, 'error');
         }
     }
 
-    showAISuggestions(file, analysis) {
-        const modal = document.getElementById('aiSuggestionsModal');
-        const body = document.getElementById('aiSuggestionsBody');
+    showTranslationResult(sectionTitle, language, translatedText) {
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.style.display = 'block';
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width: 800px;">
+                <div class="modal-header">
+                    <h2>🌐 Tradução Concluída</h2>
+                    <button class="modal-close" onclick="this.closest('.modal').remove()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div style="margin-bottom: 1rem;">
+                        <h3 style="color: var(--accent-primary); margin: 0 0 0.5rem 0;">📄 ${sectionTitle}</h3>
+                        <p style="color: var(--text-secondary); margin: 0;">
+                            <strong>Idioma:</strong> ${language}
+                        </p>
+                    </div>
 
-        if (!modal || !body) return;
+                    <div style="background: var(--bg-hover); padding: 1.5rem; border-radius: var(--radius-sm); max-height: 400px; overflow-y: auto; margin-bottom: 1.5rem;">
+                        <pre style="margin: 0; white-space: pre-wrap; font-family: 'Inter', sans-serif; line-height: 1.6; color: var(--text-primary);">${translatedText}</pre>
+                    </div>
 
-        // Dividir conteúdo do arquivo em linhas para extrair conteúdo REAL
-        const lines = file.content.split('\n');
-
-        const html = `
-            <div style="margin-bottom: 1.5rem;">
-                <h3 style="color: var(--accent-primary); margin: 0;">📄 ${file.name}</h3>
-                <p style="color: var(--text-secondary); margin-top: 0.5rem;">
-                    A IA detectou ${analysis.sections.length} divisão(ões) natural(is) neste arquivo
-                </p>
-            </div>
-
-            <h3 style="color: var(--accent-primary);">🎯 Seções detectadas (${analysis.sections.length})</h3>
-
-            <div style="max-height: 400px; overflow-y: auto;">
-                ${analysis.sections.map((section, index) => {
-                    // Extrair conteúdo REAL da seção
-                    const sectionLines = lines.slice(section.startLine, section.endLine + 1);
-
-                    // Primeira linha não vazia como título
-                    const firstLine = sectionLines.find(line => line.trim() !== '') || 'Seção sem título';
-
-                    // Preview do conteúdo (primeiras 150 caracteres)
-                    const contentPreview = sectionLines.join('\n').trim();
-                    const preview = contentPreview.length > 150
-                        ? contentPreview.substring(0, 150) + '...'
-                        : contentPreview;
-
-                    return `
-                        <div style="background: var(--bg-hover); padding: 1rem; margin: 0.75rem 0; border-radius: var(--radius-sm); border-left: 4px solid var(--accent-primary);">
-                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">
-                                <h4 style="margin: 0; color: var(--text-primary);">
-                                    ${index + 1}. ${firstLine.trim()}
-                                </h4>
-                                <span style="font-size: 0.85rem; color: var(--text-muted);">
-                                    Linhas ${section.startLine}-${section.endLine}
-                                </span>
-                            </div>
-                            <p style="margin: 0; font-size: 0.9rem; color: var(--text-secondary); white-space: pre-wrap; font-family: 'Courier New', monospace;">
-                                ${preview}
-                            </p>
-                        </div>
-                    `;
-                }).join('')}
-            </div>
-
-            <div style="margin-top: 2rem; padding-top: 1rem; border-top: 2px solid var(--border-color);">
-                <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1rem;">
-                    A IA identificou ${analysis.sections.length} seção(ões) neste arquivo. Deseja aplicar estas divisões?
-                </p>
-                <div style="display: flex; gap: 0.75rem;">
-                    <button id="applyAISuggestionsButton" class="btn-primary" style="flex: 1;">
-                        ✅ Aplicar Sugestões
-                    </button>
-                    <button onclick="document.getElementById('aiSuggestionsModal').style.display='none'" class="btn-secondary" style="flex: 1;">
-                        ❌ Cancelar
-                    </button>
+                    <div style="display: flex; gap: 0.75rem;">
+                        <button onclick="navigator.clipboard.writeText(\`${translatedText.replace(/`/g, '\\`')}\`).then(() => { alert('✅ Tradução copiada!'); })" class="btn-primary" style="flex: 1;">
+                            📋 Copiar Tradução
+                        </button>
+                        <button onclick="this.closest('.modal').remove()" class="btn-secondary" style="flex: 1;">
+                            ✅ Fechar
+                        </button>
+                    </div>
                 </div>
             </div>
         `;
 
-        body.innerHTML = html;
-        modal.style.display = 'block';
+        document.body.appendChild(modal);
 
-        // Event listener para aplicar sugestões
-        document.getElementById('applyAISuggestionsButton')?.addEventListener('click', () => {
-            this.applyAISuggestions(file, analysis);
-            modal.style.display = 'none';
-        });
-    }
-
-    applyAISuggestions(file, analysis) {
-        // Criar marcadores no conteúdo do arquivo baseado nas sugestões
-        const lines = file.content.split('\n');
-        const newLines = [];
-
-        analysis.sections.forEach((section, index) => {
-            // Adicionar marcador de seção
-            if (index === 0 && section.startLine > 0) {
-                // Adicionar conteúdo antes da primeira seção
-                newLines.push(...lines.slice(0, section.startLine));
+        // Fechar modal ao clicar fora
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
             }
-
-            // Extrair primeira linha REAL do conteúdo para usar como título
-            const sectionLines = lines.slice(section.startLine, section.endLine + 1);
-            const firstLine = sectionLines.find(line => line.trim() !== '') || 'Seção';
-
-            // Adicionar marcador com primeira linha REAL do conteúdo
-            newLines.push(`[SEÇÃO ${index + 1}] ${firstLine.trim()}`);
-            newLines.push(''); // Linha em branco
-
-            // Adicionar conteúdo da seção
-            newLines.push(...sectionLines);
-            newLines.push(''); // Linha em branco entre seções
         });
 
-        // Atualizar conteúdo do arquivo
-        file.content = newLines.join('\n');
-
-        // Re-parsear as seções
-        const project = this.projects[this.currentProject];
-        if (project) {
-            project.sections = this.parseAllSections(project);
-            this.saveToLocalStorage();
-            this.renderSections();
-            this.showToast(`✅ ${analysis.sections.length} seção(ões) aplicadas com sucesso!`, 'success');
-        }
-    }
-
-    // Dividir arquivo selecionado com IA (Copy Tab)
-    async divideSelectedFileWithAI() {
-        const selector = document.getElementById('aiFileSelector');
-
-        if (!selector || !selector.value) {
-            this.showToast('⚠️ Selecione um arquivo primeiro', 'error');
-            return;
-        }
-
-        if (!this.currentProject) {
-            this.showToast('⚠️ Nenhum projeto selecionado', 'error');
-            return;
-        }
-
-        const project = this.projects[this.currentProject];
-        const fileIndex = parseInt(selector.value);
-        const file = project.files[fileIndex];
-
-        if (!file) {
-            this.showToast('⚠️ Arquivo não encontrado', 'error');
-            return;
-        }
-
-        // Verificar se já tem marcadores
-        if (this.hasMarkers(file.content)) {
-            const confirmed = confirm(
-                `O arquivo "${file.name}" já possui marcadores de seção.\n\nDeseja substituir pelas divisões da IA?`
-            );
-            if (!confirmed) return;
-        }
-
-        // Chamar análise da IA
-        await this.analyzeFileWithAI(file);
+        this.showToast('✅ Tradução concluída!', 'success');
     }
 
     // ========================================

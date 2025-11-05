@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Script Copier Web - Gerenciador de roteiros para documentários">
-    <title>Script Copier Universal - Web Edition v2.7.9</title>
-    <link rel="stylesheet" href="styles.css?v=2.7.9">
+    <title>Script Copier Universal - Web Edition v2.8.0</title>
+    <link rel="stylesheet" href="styles.css?v=2.8.0">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -16,7 +16,7 @@
         <div class="header-content">
             <div class="logo">
                 <h1>SCRIPT COPIER UNIVERSAL</h1>
-                <span class="version">Web Edition v2.7.9</span>
+                <span class="version">Web Edition v2.8.0</span>
             </div>
             <div class="header-actions">
                 <button id="helpButton" class="btn-icon" title="Ajuda">
@@ -154,28 +154,33 @@
                                 </h3>
                             </div>
 
-                            <!-- AI Section Detector -->
-                            <div id="aiSectionDetectorPanel" style="display: none; margin-bottom: 1rem; padding: 1rem; background: linear-gradient(135deg, #667eea22 0%, #764ba222 100%); border-radius: var(--radius-sm); border: 2px dashed #667eea;">
+                            <!-- AI Translator -->
+                            <div id="aiTranslatorPanel" style="display: none; margin-bottom: 1rem; padding: 1rem; background: linear-gradient(135deg, #667eea22 0%, #764ba222 100%); border-radius: var(--radius-sm); border: 2px dashed #667eea;">
                                 <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
                                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#667eea" stroke-width="2">
-                                        <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-                                        <path d="M2 17l10 5 10-5"/>
-                                        <path d="M2 12l10 5 10-5"/>
+                                        <path d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"/>
                                     </svg>
-                                    <h4 style="margin: 0; color: #667eea; font-weight: 600;">Dividir Arquivo com IA</h4>
+                                    <h4 style="margin: 0; color: #667eea; font-weight: 600;">Tradutor de Roteiro</h4>
                                 </div>
 
-                                <select id="aiFileSelector" class="root-folder-dropdown" style="width: 100%; margin-bottom: 0.75rem;">
-                                    <option value="" disabled selected>Selecione um arquivo...</option>
+                                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.75rem;">
+                                    Traduz a seção selecionada para outro idioma
+                                </p>
+
+                                <select id="translateLanguageSelector" class="root-folder-dropdown" style="width: 100%; margin-bottom: 0.75rem;">
+                                    <option value="" disabled selected>Selecione o idioma...</option>
+                                    <option value="english">🇺🇸 Inglês</option>
+                                    <option value="spanish">🇪🇸 Espanhol</option>
+                                    <option value="french">🇫🇷 Francês</option>
+                                    <option value="italian">🇮🇹 Italiano</option>
+                                    <option value="german">🇩🇪 Alemão</option>
                                 </select>
 
-                                <button id="divideWithAIButton" class="btn-primary" style="width: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
+                                <button id="translateButton" class="btn-primary" style="width: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
                                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-                                        <path d="M2 17l10 5 10-5"/>
-                                        <path d="M2 12l10 5 10-5"/>
+                                        <path d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"/>
                                     </svg>
-                                    Dividir com IA
+                                    Traduzir Seção
                                 </button>
                             </div>
 
@@ -450,7 +455,7 @@
             <div class="modal-body">
                 <div class="about-logo">
                     <h1 style="color: #cb6246; font-size: 2.5rem;">SCRIPT COPIER UNIVERSAL</h1>
-                    <p style="font-size: 1.2rem; color: #666;">Web Edition v2.7.9</p>
+                    <p style="font-size: 1.2rem; color: #666;">Web Edition v2.8.0</p>
                 </div>
 
                 <h3>Desenvolvido por</h3>
@@ -570,6 +575,6 @@
     <div id="toast" class="toast"></div>
 
     <!-- Scripts -->
-    <script src="app.js?v=2.7.9"></script>
+    <script src="app.js?v=2.8.0"></script>
 </body>
 </html>
