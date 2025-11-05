@@ -1,12 +1,12 @@
 // ========================================
 // SCRIPT COPIER WEB - Desktop Layout
 // Portado de ScriptCopier_UNIVERSAL.py
-// Version: 2.7.8 - IA mostra conteúdo REAL ao invés de títulos gerados
+// Version: 2.7.9 - Botão Abrir Pasta + Dropdowns não-selecionáveis + Debug logs
 // ========================================
 
 class ScriptCopierApp {
     constructor() {
-        console.log('🚀 Script Copier v2.7.8 - IA mostra conteúdo REAL do arquivo (cortador inteligente)');
+        console.log('🚀 Script Copier v2.7.9 - Botão Abrir Pasta + Placeholders corrigidos + Debug logs');
 
         // Nova estrutura: múltiplas pastas raiz
         this.rootFolders = []; // Array de {id, name, handle, projects}
