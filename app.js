@@ -85,6 +85,7 @@ class ScriptCopierApp {
         });
 
         document.getElementById('addRootFolderButton')?.addEventListener('click', () => {
+            console.log('🖱️ Botão "+Nova Pasta" clicado');
             this.addNewRootFolder();
         });
 
@@ -93,6 +94,7 @@ class ScriptCopierApp {
         });
 
         document.getElementById('uploadButton').addEventListener('click', () => {
+            console.log('🖱️ Botão "Selecionar Pasta" clicado');
             this.selectDirectory();
         });
 
@@ -191,24 +193,34 @@ class ScriptCopierApp {
     // ========================================
 
     async selectDirectory() {
+        console.log('🔍 selectDirectory() chamado');
+        console.log('🌐 Navegador:', navigator.userAgent);
+        console.log('📂 showDirectoryPicker disponível?', 'showDirectoryPicker' in window);
+
         if (!('showDirectoryPicker' in window)) {
-            this.showToast('⚠️ Navegador não suporta acesso direto. Use upload de pasta.', 'error');
-            document.getElementById('fileInput').click();
+            console.error('❌ API File System Access não disponível neste navegador');
+            this.showToast('⚠️ Navegador não suporta acesso direto. Use Chrome ou Edge.', 'error');
+            alert('⚠️ ATENÇÃO:\n\nEste navegador não suporta a API de acesso a pastas.\n\nPor favor, use:\n• Google Chrome\n• Microsoft Edge\n• Brave\n\nFirefox e Safari não são suportados para esta funcionalidade.');
             return;
         }
 
         try {
+            console.log('📂 Abrindo seletor de pasta...');
             const dirHandle = await window.showDirectoryPicker({
                 mode: 'read',
                 startIn: 'documents'
             });
 
+            console.log('✅ Pasta selecionada:', dirHandle.name);
+
             // Adicionar como nova pasta raiz
             await this.addRootFolderFromHandle(dirHandle);
         } catch (err) {
             if (err.name !== 'AbortError') {
-                console.error('Erro ao selecionar pasta:', err);
+                console.error('❌ Erro ao selecionar pasta:', err);
                 this.showToast('Erro ao acessar pasta', 'error');
+            } else {
+                console.log('ℹ️ Usuário cancelou seleção de pasta');
             }
         }
     }
