@@ -1,0 +1,23 @@
+# Arquivos de desenvolvimento
+.DS_Store
+Thumbs.db
+*.log
+*.swp
+*.bak
+
+# Python source (apenas referência)
+source-python/__pycache__/
+source-python/*.pyc
+
+# IDE
+.vscode/
+.idea/
+*.code-workspace
+
+# Node modules (se adicionar build tools futuramente)
+node_modules/
+package-lock.json
+
+# Backups locais
+*.backup
+backup_*/

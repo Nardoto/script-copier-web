@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Script Copier Web - Gerenciador de roteiros para documentários">
+    <title>Script Copier Universal - Web Edition</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <h1>Script Copier Universal</h1>
+                <span class="version">Web Edition v1.0</span>
+            </div>
+            <div class="header-actions">
+                <button id="uploadButton" class="btn-primary">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M10 3V17M10 3L6 7M10 3L14 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M3 13V15C3 16.1046 3.89543 17 5 17H15C16.1046 17 17 16.1046 17 15V13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Carregar Roteiros
+                </button>
+                <input type="file" id="fileInput" multiple accept=".txt" style="display: none;">
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Project Selector -->
+        <div id="projectSelector" class="project-selector">
+            <div class="empty-state">
+                <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
+                    <path d="M20 26.6667L40 13.3334L60 26.6667V53.3334L40 66.6667L20 53.3334V26.6667Z" stroke="#cb6246" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M20 26.6667L40 40L60 26.6667M40 66.6667V40" stroke="#cb6246" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <h2>Nenhum roteiro carregado</h2>
+                <p>Clique em "Carregar Roteiros" para começar</p>
+            </div>
+            <div id="projectList" class="project-list" style="display: none;"></div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs-container" id="tabsContainer" style="display: none;">
+            <!-- Tab Navigation -->
+            <div class="tabs-nav">
+                <button class="tab-button active" data-tab="copy">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M7 7V5C7 3.89543 7.89543 3 9 3H15C16.1046 3 17 3.89543 17 5V11C17 12.1046 16.1046 13 15 13H13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        <rect x="3" y="7" width="10" height="10" rx="2" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                    Copiar Seções
+                </button>
+                <button class="tab-button" data-tab="view">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M3 4H17M3 10H17M3 16H17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Visualizar Arquivos
+                </button>
+                <button class="tab-button" data-tab="youtube">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <rect x="2" y="4" width="16" height="12" rx="2" stroke="currentColor" stroke-width="2"/>
+                        <path d="M8 7L13 10L8 13V7Z" fill="currentColor"/>
+                    </svg>
+                    YouTube
+                </button>
+            </div>
+
+            <!-- Tab Content -->
+            <div class="tabs-content">
+                <!-- Copy Tab -->
+                <div id="copyTab" class="tab-content active">
+                    <div class="sections-container">
+                        <div id="sectionsList" class="sections-list"></div>
+                    </div>
+                </div>
+
+                <!-- View Tab -->
+                <div id="viewTab" class="tab-content">
+                    <div id="filesList" class="files-list"></div>
+                </div>
+
+                <!-- YouTube Tab -->
+                <div id="youtubeTab" class="tab-content">
+                    <div class="youtube-container">
+                        <div class="form-group">
+                            <label>Status do Vídeo</label>
+                            <div class="status-buttons">
+                                <button class="status-btn" data-status="new">⚪ Novo</button>
+                                <button class="status-btn" data-status="recorded">🎬 Gravado</button>
+                                <button class="status-btn" data-status="posted">✅ Postado</button>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Títulos (5 opções)</label>
+                            <textarea id="titles" rows="5" placeholder="Digite 5 opções de título, uma por linha..."></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Descrição do YouTube</label>
+                            <textarea id="description" rows="8" placeholder="Digite a descrição do vídeo..."></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Ideias para Thumbnail</label>
+                            <textarea id="thumbnail" rows="4" placeholder="Descreva ideias para a thumbnail..."></textarea>
+                        </div>
+
+                        <button class="btn-primary btn-full" id="saveYoutubeData">
+                            Salvar Informações
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section Detail Modal -->
+    <div id="sectionModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalSectionTitle"></h2>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="modalSectionText" class="section-text"></div>
+            </div>
+            <div class="modal-footer">
+                <div class="copy-info">
+                    <span id="modalCopyCount">Nunca copiado</span>
+                </div>
+                <button class="btn-primary" id="modalCopyButton">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M7 7V5C7 3.89543 7.89543 3 9 3H15C16.1046 3 17 3.89543 17 5V11C17 12.1046 16.1046 13 15 13H13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        <rect x="3" y="7" width="10" height="10" rx="2" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                    Copiar Texto
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast"></div>
+
+    <!-- Scripts -->
+    <script src="app.js"></script>
+</body>
+</html>
