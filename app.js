@@ -1,12 +1,12 @@
 // ========================================
 // SCRIPT COPIER WEB - Desktop Layout
 // Portado de ScriptCopier_UNIVERSAL.py
-// Version: 2.8.2 - Correção: erro no modal de progresso da tradução
+// Version: 2.8.3 - Tradutor COMPLETO: scroll sincronizado, navegação entre seções, tradução de arquivo completo
 // ========================================
 
 class ScriptCopierApp {
     constructor() {
-        console.log('🚀 Script Copier v2.8.2 - Tradutor com progresso corrigido');
+        console.log('🚀 Script Copier v2.8.3 - Tradutor completo com scroll sincronizado e arquivo completo');
 
         // Nova estrutura: múltiplas pastas raiz
         this.rootFolders = []; // Array de {id, name, handle, projects}
@@ -142,6 +142,11 @@ class ScriptCopierApp {
         // File preview copy button
         document.getElementById('copyFileButton')?.addEventListener('click', () => {
             this.copyCurrentFile();
+        });
+
+        // File translation button
+        document.getElementById('translateFileButton')?.addEventListener('click', () => {
+            this.translateEntireFile();
         });
 
         // YouTube form
@@ -1789,19 +1794,41 @@ class ScriptCopierApp {
         this.updateAIProgress('Preparando tradução...', 10);
 
         const prompt = `
-Traduza o seguinte texto de roteiro de documentário bíblico para ${targetLanguage}.
+Você é um tradutor especializado em roteiros de documentários bíblicos e textos religiosos.
 
-INSTRUÇÕES IMPORTANTES:
-- Mantenha o estilo narrativo e tom do original
-- Preserve nomes próprios bíblicos (Jesus, Jerusalém, etc.)
-- Use linguagem natural e fluente no idioma de destino
-- Mantenha a formatação e parágrafos
-- NÃO adicione comentários ou explicações, apenas a tradução
+TAREFA: Traduza o texto abaixo de Português para ${targetLanguage}, mantendo TOTAL FIDELIDADE ao conteúdo original.
+
+INSTRUÇÕES CRÍTICAS:
+1. PRESERVAÇÃO TEOLÓGICA:
+   - Mantenha EXATAMENTE o significado teológico e doutrinário
+   - Preserve todos os nomes bíblicos (Jesus, Jerusalém, Abraão, etc.)
+   - Mantenha termos técnicos religiosos com precisão
+
+2. ESTILO NARRATIVO:
+   - Mantenha o tom narrativo de documentário
+   - Preserve o ritmo e a cadência do texto original
+   - Mantenha a força dramática e emocional das passagens
+
+3. FIDELIDADE ESTRUTURAL:
+   - Mantenha TODOS os parágrafos e quebras de linha
+   - Preserve marcadores de tempo (ex: "0:00-2:30")
+   - Mantenha títulos e subtítulos sem alteração de formato
+
+4. QUALIDADE LINGUÍSTICA:
+   - Use linguagem culta e fluente em ${targetLanguage}
+   - Evite traduções literais que soem não-naturais
+   - Adapte expressões idiomáticas mantendo o sentido original
+
+5. RESTRIÇÕES:
+   - NÃO adicione explicações, notas ou comentários
+   - NÃO omita ou resuma nenhuma parte do texto
+   - NÃO altere números, datas ou referências bíblicas
+   - Retorne APENAS a tradução, sem prefácio ou conclusão
 
 TEXTO ORIGINAL (Português):
 ${this.currentSection.text}
 
-TRADUÇÃO PARA ${targetLanguage.toUpperCase()}:
+TRADUÇÃO FIEL PARA ${targetLanguage.toUpperCase()}:
 `;
 
         try {
@@ -1858,65 +1885,70 @@ TRADUÇÃO PARA ${targetLanguage.toUpperCase()}:
         const modal = document.createElement('div');
         modal.className = 'modal';
         modal.style.display = 'block';
+        modal.id = 'translationModal';
+
+        // Escapar HTML para evitar quebras
+        const escapeHtml = (text) => {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        };
+
         modal.innerHTML = `
             <div class="modal-content" style="max-width: 1200px; width: 90%;">
                 <div class="modal-header">
-                    <h2>🌐 Tradução: ${sectionTitle}</h2>
-                    <button class="modal-close" onclick="this.closest('.modal').remove()">&times;</button>
+                    <h2>🌐 Tradução: ${escapeHtml(sectionTitle)}</h2>
+                    <button class="modal-close" id="closeTranslationModal">&times;</button>
                 </div>
                 <div class="modal-body">
                     <div style="margin-bottom: 1rem;">
                         <p style="color: var(--text-secondary); margin: 0;">
-                            <strong>Idioma de destino:</strong> ${language}
+                            <strong>Idioma de destino:</strong> ${escapeHtml(language)}
                         </p>
                     </div>
 
-                    <!-- Comparação lado a lado -->
+                    <!-- Comparação lado a lado com SCROLL SINCRONIZADO -->
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
                         <!-- Coluna Original -->
                         <div>
                             <h4 style="color: var(--accent-primary); margin: 0 0 0.75rem 0; padding-bottom: 0.5rem; border-bottom: 2px solid var(--accent-primary);">
                                 📝 Original
                             </h4>
-                            <div style="background: var(--bg-hover); padding: 1.5rem; border-radius: var(--radius-sm); max-height: 400px; overflow-y: auto;">
-                                <pre style="margin: 0; white-space: pre-wrap; font-family: 'Inter', sans-serif; line-height: 1.6; color: var(--text-primary); font-size: 0.9rem;">${originalText}</pre>
+                            <div id="originalTextScroll" style="background: var(--bg-hover); padding: 1.5rem; border-radius: var(--radius-sm); max-height: 400px; overflow-y: auto;">
+                                <pre id="originalTextContent" style="margin: 0; white-space: pre-wrap; font-family: 'Inter', sans-serif; line-height: 1.6; color: var(--text-primary); font-size: 0.9rem;">${escapeHtml(originalText)}</pre>
                             </div>
                         </div>
 
                         <!-- Coluna Tradução -->
                         <div>
                             <h4 style="color: #667eea; margin: 0 0 0.75rem 0; padding-bottom: 0.5rem; border-bottom: 2px solid #667eea;">
-                                🌐 ${language}
+                                🌐 ${escapeHtml(language)}
                             </h4>
-                            <div style="background: linear-gradient(135deg, #667eea11 0%, #764ba211 100%); padding: 1.5rem; border-radius: var(--radius-sm); max-height: 400px; overflow-y: auto; border: 2px solid #667eea;">
-                                <pre id="translatedTextContent" style="margin: 0; white-space: pre-wrap; font-family: 'Inter', sans-serif; line-height: 1.6; color: var(--text-primary); font-size: 0.9rem;">${translatedText}</pre>
+                            <div id="translatedTextScroll" style="background: linear-gradient(135deg, #667eea11 0%, #764ba211 100%); padding: 1.5rem; border-radius: var(--radius-sm); max-height: 400px; overflow-y: auto; border: 2px solid #667eea;">
+                                <pre id="translatedTextContent" style="margin: 0; white-space: pre-wrap; font-family: 'Inter', sans-serif; line-height: 1.6; color: var(--text-primary); font-size: 0.9rem;">${escapeHtml(translatedText)}</pre>
                             </div>
                         </div>
                     </div>
 
+                    <!-- Navegação entre seções -->
+                    <div style="display: flex; gap: 0.75rem; margin-bottom: 1rem; padding: 1rem; background: var(--bg-hover); border-radius: var(--radius-sm);">
+                        <button id="translatePrevSection" class="btn-secondary" style="flex: 1;">
+                            ⬅️ Seção Anterior
+                        </button>
+                        <button id="translateNextSection" class="btn-secondary" style="flex: 1;">
+                            Próxima Seção ➡️
+                        </button>
+                    </div>
+
                     <!-- Botões de ação -->
                     <div style="display: flex; gap: 0.75rem;">
-                        <button onclick="
-                            const text = document.getElementById('translatedTextContent').textContent;
-                            navigator.clipboard.writeText(text).then(() => {
-                                this.textContent = '✅ Copiado!';
-                                setTimeout(() => { this.textContent = '📋 Copiar Tradução'; }, 2000);
-                            });
-                        " class="btn-primary" style="flex: 1;">
+                        <button id="copyTranslationBtn" class="btn-primary" style="flex: 1;">
                             📋 Copiar Tradução
                         </button>
-                        <button onclick="
-                            const original = \`${originalText.replace(/`/g, '\\`')}\`;
-                            const translated = document.getElementById('translatedTextContent').textContent;
-                            const full = 'ORIGINAL:\\n' + original + '\\n\\n---\\n\\nTRADUÇÃO (${language}):\\n' + translated;
-                            navigator.clipboard.writeText(full).then(() => {
-                                this.textContent = '✅ Copiado!';
-                                setTimeout(() => { this.textContent = '📄 Copiar Ambos'; }, 2000);
-                            });
-                        " class="btn-secondary" style="flex: 1;">
+                        <button id="copyBothBtn" class="btn-secondary" style="flex: 1;">
                             📄 Copiar Ambos
                         </button>
-                        <button onclick="this.closest('.modal').remove()" class="btn-secondary" style="flex: 0 0 auto; padding: 0 1.5rem;">
+                        <button id="closeModalBtn" class="btn-secondary" style="flex: 0 0 auto; padding: 0 1.5rem;">
                             ✕ Fechar
                         </button>
                     </div>
@@ -1926,14 +1958,242 @@ TRADUÇÃO PARA ${targetLanguage.toUpperCase()}:
 
         document.body.appendChild(modal);
 
+        // ===== SCROLL SINCRONIZADO =====
+        const originalScroll = document.getElementById('originalTextScroll');
+        const translatedScroll = document.getElementById('translatedTextScroll');
+        let isScrolling = false;
+
+        originalScroll.addEventListener('scroll', () => {
+            if (isScrolling) return;
+            isScrolling = true;
+
+            const scrollPercent = originalScroll.scrollTop / (originalScroll.scrollHeight - originalScroll.clientHeight);
+            translatedScroll.scrollTop = scrollPercent * (translatedScroll.scrollHeight - translatedScroll.clientHeight);
+
+            setTimeout(() => { isScrolling = false; }, 50);
+        });
+
+        translatedScroll.addEventListener('scroll', () => {
+            if (isScrolling) return;
+            isScrolling = true;
+
+            const scrollPercent = translatedScroll.scrollTop / (translatedScroll.scrollHeight - translatedScroll.clientHeight);
+            originalScroll.scrollTop = scrollPercent * (originalScroll.scrollHeight - originalScroll.clientHeight);
+
+            setTimeout(() => { isScrolling = false; }, 50);
+        });
+
+        // ===== EVENT LISTENERS DOS BOTÕES =====
+
+        // Copiar apenas tradução
+        document.getElementById('copyTranslationBtn').addEventListener('click', function() {
+            const text = document.getElementById('translatedTextContent').textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                this.textContent = '✅ Copiado!';
+                setTimeout(() => { this.textContent = '📋 Copiar Tradução'; }, 2000);
+            });
+        });
+
+        // Copiar ambos (original + tradução)
+        document.getElementById('copyBothBtn').addEventListener('click', function() {
+            const original = document.getElementById('originalTextContent').textContent;
+            const translated = document.getElementById('translatedTextContent').textContent;
+            const full = `ORIGINAL:\n${original}\n\n---\n\nTRADUÇÃO (${language}):\n${translated}`;
+            navigator.clipboard.writeText(full).then(() => {
+                this.textContent = '✅ Copiado!';
+                setTimeout(() => { this.textContent = '📄 Copiar Ambos'; }, 2000);
+            });
+        });
+
+        // Fechar modal
+        const closeModal = () => modal.remove();
+        document.getElementById('closeTranslationModal').addEventListener('click', closeModal);
+        document.getElementById('closeModalBtn').addEventListener('click', closeModal);
+
         // Fechar modal ao clicar fora
         modal.addEventListener('click', (e) => {
             if (e.target === modal) {
-                modal.remove();
+                closeModal();
             }
         });
 
+        // ===== NAVEGAÇÃO ENTRE SEÇÕES =====
+        const project = this.projects[this.currentProject];
+        const sections = project ? project.sections : [];
+        const currentIndex = sections.findIndex(s => s.title === this.currentSection.title);
+
+        document.getElementById('translatePrevSection').addEventListener('click', async () => {
+            if (currentIndex > 0) {
+                this.currentSection = sections[currentIndex - 1];
+                this.selectSection(sections[currentIndex - 1]);
+                modal.remove();
+                await this.translateCurrentSection();
+            } else {
+                this.showToast('⚠️ Esta é a primeira seção', 'warning');
+            }
+        });
+
+        document.getElementById('translateNextSection').addEventListener('click', async () => {
+            if (currentIndex < sections.length - 1) {
+                this.currentSection = sections[currentIndex + 1];
+                this.selectSection(sections[currentIndex + 1]);
+                modal.remove();
+                await this.translateCurrentSection();
+            } else {
+                this.showToast('⚠️ Esta é a última seção', 'warning');
+            }
+        });
+
+        // Desabilitar botões se não houver seção anterior/próxima
+        if (currentIndex === 0) {
+            document.getElementById('translatePrevSection').disabled = true;
+            document.getElementById('translatePrevSection').style.opacity = '0.5';
+        }
+        if (currentIndex === sections.length - 1) {
+            document.getElementById('translateNextSection').disabled = true;
+            document.getElementById('translateNextSection').style.opacity = '0.5';
+        }
+
         this.showToast('✅ Tradução concluída!', 'success');
+    }
+
+    async translateEntireFile() {
+        // Verificar se há arquivo selecionado
+        if (!this.currentFileHandle) {
+            this.showToast('⚠️ Selecione um arquivo primeiro', 'error');
+            return;
+        }
+
+        // Verificar API Key
+        if (!this.geminiApiKey) {
+            this.showToast('⚠️ Configure a API Key do Google Gemini primeiro', 'error');
+            document.getElementById('settingsModal').style.display = 'block';
+            return;
+        }
+
+        // Pegar idioma selecionado
+        const languageSelector = document.getElementById('fileTranslateLanguageSelector');
+        if (!languageSelector || !languageSelector.value) {
+            this.showToast('⚠️ Selecione um idioma primeiro', 'error');
+            return;
+        }
+
+        const languageMap = {
+            'english': 'Inglês',
+            'portuguese': 'Português (Brasil)',
+            'spanish': 'Espanhol',
+            'french': 'Francês',
+            'italian': 'Italiano',
+            'german': 'Alemão'
+        };
+
+        const targetLanguage = languageMap[languageSelector.value];
+
+        // Ler conteúdo do arquivo
+        const file = await this.currentFileHandle.getFile();
+        const fileContent = await file.text();
+
+        if (!fileContent || fileContent.trim().length === 0) {
+            this.showToast('⚠️ O arquivo está vazio', 'error');
+            return;
+        }
+
+        // Mostrar barra de progresso
+        this.showAIProgressModal({
+            name: this.currentFileHandle.name,
+            content: fileContent.substring(0, 500) + '...'
+        });
+        this.updateAIProgress('Preparando tradução do arquivo completo...', 10);
+
+        const prompt = `
+Você é um tradutor especializado em roteiros de documentários bíblicos e textos religiosos.
+
+TAREFA: Traduza o ARQUIVO COMPLETO abaixo de Português para ${targetLanguage}, mantendo TOTAL FIDELIDADE ao conteúdo original.
+
+INSTRUÇÕES CRÍTICAS:
+1. PRESERVAÇÃO TEOLÓGICA:
+   - Mantenha EXATAMENTE o significado teológico e doutrinário
+   - Preserve todos os nomes bíblicos (Jesus, Jerusalém, Abraão, etc.)
+   - Mantenha termos técnicos religiosos com precisão
+
+2. ESTILO NARRATIVO:
+   - Mantenha o tom narrativo de documentário
+   - Preserve o ritmo e a cadência do texto original
+   - Mantenha a força dramática e emocional das passagens
+
+3. FIDELIDADE ESTRUTURAL:
+   - Mantenha TODOS os parágrafos e quebras de linha
+   - Preserve marcadores de seção (ex: "[SEÇÃO 1]", "[SEÇÃO 2]")
+   - Preserve marcadores de tempo (ex: "0:00-2:30")
+   - Mantenha títulos e subtítulos sem alteração de formato
+   - Preserve TODA a estrutura do documento
+
+4. QUALIDADE LINGUÍSTICA:
+   - Use linguagem culta e fluente em ${targetLanguage}
+   - Evite traduções literais que soem não-naturais
+   - Adapte expressões idiomáticas mantendo o sentido original
+
+5. RESTRIÇÕES:
+   - NÃO adicione explicações, notas ou comentários
+   - NÃO omita ou resuma nenhuma parte do texto
+   - NÃO altere números, datas ou referências bíblicas
+   - Retorne APENAS a tradução, sem prefácio ou conclusão
+   - TRADUZA TODO O ARQUIVO, do início ao fim
+
+TEXTO ORIGINAL COMPLETO (Português):
+${fileContent}
+
+TRADUÇÃO FIEL COMPLETA PARA ${targetLanguage.toUpperCase()}:
+`;
+
+        try {
+            this.updateAIProgress('Enviando arquivo para IA...', 30);
+
+            const response = await fetch(
+                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${this.geminiApiKey}`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{ text: prompt }]
+                        }]
+                    })
+                }
+            );
+
+            this.updateAIProgress('Processando resposta...', 60);
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error?.message || 'Erro na API');
+            }
+
+            const data = await response.json();
+            const translatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+            if (!translatedText) {
+                throw new Error('Resposta vazia da IA');
+            }
+
+            this.updateAIProgress('Concluído!', 100);
+
+            // Fechar modal de progresso e mostrar resultado
+            setTimeout(() => {
+                this.closeAIProgressModal();
+                this.showTranslationResult(
+                    this.currentFileHandle.name,
+                    targetLanguage,
+                    fileContent,
+                    translatedText
+                );
+            }, 500);
+
+        } catch (error) {
+            console.error('Erro ao traduzir arquivo:', error);
+            this.closeAIProgressModal();
+            this.showToast(`❌ Erro na tradução: ${error.message}`, 'error');
+        }
     }
 
     // ========================================

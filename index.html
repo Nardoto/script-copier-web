@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Script Copier Web - Gerenciador de roteiros para documentários">
-    <title>Script Copier Universal - Web Edition v2.8.2</title>
-    <link rel="stylesheet" href="styles.css?v=2.8.2">
+    <title>Script Copier Universal - Web Edition v2.8.3</title>
+    <link rel="stylesheet" href="styles.css?v=2.8.3">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -16,7 +16,7 @@
         <div class="header-content">
             <div class="logo">
                 <h1>SCRIPT COPIER UNIVERSAL</h1>
-                <span class="version">Web Edition v2.8.2</span>
+                <span class="version">Web Edition v2.8.3</span>
             </div>
             <div class="header-actions">
                 <button id="helpButton" class="btn-icon" title="Ajuda">
@@ -285,6 +285,28 @@
                                     </svg>
                                     Copiar
                                 </button>
+
+                                <!-- Tradutor de Arquivo -->
+                                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                    <select id="fileTranslateLanguageSelector" class="root-folder-dropdown" style="min-width: 200px;">
+                                        <option value="" disabled selected>Selecione o idioma...</option>
+                                        <option value="english">🇺🇸 Inglês</option>
+                                        <option value="portuguese">🇧🇷 Português (Brasil)</option>
+                                        <option value="spanish">🇪🇸 Espanhol</option>
+                                        <option value="french">🇫🇷 Francês</option>
+                                        <option value="italian">🇮🇹 Italiano</option>
+                                        <option value="german">🇩🇪 Alemão</option>
+                                    </select>
+                                    <button id="translateFileButton" class="btn-copy-large" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                            <path d="M10 2C14.418 2 18 5.582 18 10C18 14.418 14.418 18 10 18C5.582 18 2 14.418 2 10C2 5.582 5.582 2 10 2Z" stroke="currentColor" stroke-width="2"/>
+                                            <path d="M7 10L10 7L13 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                            <path d="M10 7V13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                        </svg>
+                                        Traduzir Arquivo
+                                    </button>
+                                </div>
+
                                 <span id="fileInfoDisplay" class="copy-count-info"></span>
                             </div>
                         </div>
@@ -456,7 +478,7 @@
             <div class="modal-body">
                 <div class="about-logo">
                     <h1 style="color: #cb6246; font-size: 2.5rem;">SCRIPT COPIER UNIVERSAL</h1>
-                    <p style="font-size: 1.2rem; color: #666;">Web Edition v2.8.2</p>
+                    <p style="font-size: 1.2rem; color: #666;">Web Edition v2.8.3</p>
                 </div>
 
                 <h3>Desenvolvido por</h3>
@@ -576,6 +598,6 @@
     <div id="toast" class="toast"></div>
 
     <!-- Scripts -->
-    <script src="app.js?v=2.8.2"></script>
+    <script src="app.js?v=2.8.3"></script>
 </body>
 </html>
