@@ -1,15 +1,22 @@
 // ========================================
 // SCRIPT COPIER WEB - Desktop Layout
 // Portado de ScriptCopier_UNIVERSAL.py
+// Version: 2.1.0 - Fixed YouTube titles and sticky files
 // ========================================
 
 class ScriptCopierApp {
     constructor() {
+        console.log('🚀 Script Copier v2.1.0 - Com correções de títulos e sticky');
         this.projects = {};
         this.currentProject = null;
         this.currentSection = null;
         this.currentFile = null;
         this.copyHistory = this.loadHistory();
+
+        // FORÇA limpeza do cache do YouTube para testar
+        localStorage.removeItem('youtubeData');
+        console.log('🔄 Cache do YouTube limpo!');
+
         this.youtubeData = this.loadYoutubeData();
         this.directoryHandle = null;
         this.init();
@@ -857,7 +864,9 @@ class ScriptCopierApp {
 
             if (youtubeFile) {
                 console.log('📄 Arquivo YouTube encontrado:', youtubeFile.name);
+                console.log('📋 Conteúdo do arquivo (primeiras 500 letras):', youtubeFile.content.substring(0, 500));
                 const parsedData = this.parseYoutubeDataFromFile(youtubeFile.content);
+                console.log('✅ Dados parseados:', parsedData);
 
                 // Preencher com dados do arquivo
                 data = {
