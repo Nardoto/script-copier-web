@@ -1,12 +1,12 @@
 // ========================================
 // SCRIPT COPIER WEB - Desktop Layout
 // Portado de ScriptCopier_UNIVERSAL.py
-// Version: 2.7.5 - hasMarkers() melhorado: detecta ACT, PART, CAPÍTULO, etc.
+// Version: 2.7.7 - Barra de progresso para análise de IA + prompt melhorado
 // ========================================
 
 class ScriptCopierApp {
     constructor() {
-        console.log('🚀 Script Copier v2.7.6 - parseSections() atualizado para detectar divisões naturais com : ou -');
+        console.log('🚀 Script Copier v2.7.7 - Modal de progresso para IA + detecção de espaçamento entre parágrafos');
 
         // Nova estrutura: múltiplas pastas raiz
         this.rootFolders = []; // Array de {id, name, handle, projects}
