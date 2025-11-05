@@ -327,10 +327,20 @@ class ScriptCopierApp {
     parseAllSections(project) {
         const sections = [];
 
-        project.files.forEach(file => {
-            const fileSections = this.parseSections(file.content, file.name);
+        // Prioridade: buscar arquivo 03_Texto_Narrado.txt
+        const narratedFile = project.files.find(f => f.name.includes('03_Texto_Narrado'));
+
+        if (narratedFile) {
+            // Se encontrou arquivo 03, usar APENAS ele
+            const fileSections = this.parseSections(narratedFile.content, narratedFile.name);
             sections.push(...fileSections);
-        });
+        } else {
+            // Senão, buscar em todos os arquivos (comportamento antigo)
+            project.files.forEach(file => {
+                const fileSections = this.parseSections(file.content, file.name);
+                sections.push(...fileSections);
+            });
+        }
 
         return sections;
     }
@@ -399,6 +409,41 @@ class ScriptCopierApp {
 
     countWords(text) {
         return text.trim().split(/\s+/).filter(word => word.length > 0).length;
+    }
+
+    parseYoutubeDataFromFile(content) {
+        const data = {
+            titles: [],
+            description: '',
+            thumbnail: ''
+        };
+
+        try {
+            // Extrair títulos (OPÇÃO 1 a 5)
+            const titleRegex = /OPÇÃO\s+(\d+):\s*\n(.+?)(?=\n\nOPÇÃO|\n\n━|$)/gs;
+            let match;
+            while ((match = titleRegex.exec(content)) !== null) {
+                const optionNum = parseInt(match[1]);
+                const title = match[2].trim();
+                data.titles[optionNum - 1] = title;
+            }
+
+            // Extrair descrição
+            const descMatch = content.match(/DESCRIÇÃO PARA YOUTUBE:\s*\n\n([\s\S]+?)(?=\n\n━|$)/);
+            if (descMatch) {
+                data.description = descMatch[1].trim();
+            }
+
+            // Extrair ideias para thumbnail
+            const thumbnailMatch = content.match(/IDEIA PARA THUMBNAIL:\s*\n\n([\s\S]+?)$/);
+            if (thumbnailMatch) {
+                data.thumbnail = thumbnailMatch[1].trim();
+            }
+        } catch (err) {
+            console.error('Erro ao parsear dados do YouTube:', err);
+        }
+
+        return data;
     }
 
     // ========================================
@@ -702,8 +747,38 @@ class ScriptCopierApp {
     }
 
     loadYoutubeDataForProject(projectName) {
-        const data = this.youtubeData[projectName] || {};
+        let data = this.youtubeData[projectName] || {};
 
+        // Se não tem dados salvos, tentar carregar do arquivo 05_Titulo_Descricao.txt
+        if (!data.title1 && this.projects[projectName]) {
+            const youtubeFile = this.projects[projectName].files.find(f =>
+                f.name.includes('05_Titulo_Descricao') || f.name.includes('05_Titulo_Descrição')
+            );
+
+            if (youtubeFile) {
+                const parsedData = this.parseYoutubeDataFromFile(youtubeFile.content);
+
+                // Preencher com dados do arquivo
+                data = {
+                    posted: data.posted || false,
+                    title1: parsedData.titles[0] || '',
+                    title2: parsedData.titles[1] || '',
+                    title3: parsedData.titles[2] || '',
+                    title4: parsedData.titles[3] || '',
+                    title5: parsedData.titles[4] || '',
+                    description: parsedData.description || '',
+                    thumbnail: parsedData.thumbnail || ''
+                };
+
+                // Salvar automaticamente para não precisar parsear novamente
+                this.youtubeData[projectName] = data;
+                this.saveYoutubeDataToStorage();
+
+                this.showToast('✨ Dados do YouTube carregados automaticamente do arquivo!', 'success');
+            }
+        }
+
+        // Preencher campos no formulário
         document.getElementById('videoPostedCheckbox').checked = data.posted || false;
         document.getElementById('title1').value = data.title1 || '';
         document.getElementById('title2').value = data.title2 || '';
