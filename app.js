@@ -93,6 +93,10 @@ class ScriptCopierApp {
             this.removeCurrentRootFolder();
         });
 
+        document.getElementById('openFolderButton')?.addEventListener('click', () => {
+            this.openProjectFolder();
+        });
+
         document.getElementById('uploadButton').addEventListener('click', () => {
             console.log('🖱️ Botão "Selecionar Pasta" clicado');
             this.selectDirectory();
@@ -228,6 +232,78 @@ class ScriptCopierApp {
     // Adiciona nova pasta raiz (para botão "+Nova Pasta")
     async addNewRootFolder() {
         await this.selectDirectory();
+    }
+
+    // Abre pasta do projeto (limitação: navegadores não permitem abrir diretamente no Explorer)
+    async openProjectFolder() {
+        console.log('🖱️ Botão "Abrir Pasta" clicado');
+
+        if (!this.currentRootFolderId) {
+            this.showToast('⚠️ Nenhuma pasta raiz selecionada', 'error');
+            return;
+        }
+
+        const rootFolder = this.rootFolders.find(rf => rf.id === this.currentRootFolderId);
+        if (!rootFolder) {
+            this.showToast('⚠️ Pasta raiz não encontrada', 'error');
+            return;
+        }
+
+        // Por segurança, navegadores NÃO permitem abrir pastas no Explorer diretamente
+        // Alternativa: Mostrar informações da pasta
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.style.display = 'block';
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width: 500px;">
+                <div class="modal-header">
+                    <h2>📁 Pasta do Projeto</h2>
+                    <button class="modal-close" onclick="this.closest('.modal').remove()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div style="background: var(--bg-hover); padding: 1.5rem; border-radius: var(--radius-sm); margin-bottom: 1rem;">
+                        <h3 style="color: var(--accent-primary); margin: 0 0 0.5rem 0; display: flex; align-items: center; gap: 0.5rem;">
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                <path d="M3 5C3 3.89543 3.89543 3 5 3H8L10 5H15C16.1046 5 17 5.89543 17 7V15C17 16.1046 16.1046 17 15 17H5C3.89543 17 3 16.1046 3 15V5Z" stroke="currentColor" stroke-width="2"></path>
+                            </svg>
+                            ${rootFolder.name}
+                        </h3>
+                        <p style="color: var(--text-secondary); margin: 0; font-size: 0.9rem;">
+                            Pasta raiz atual
+                        </p>
+                    </div>
+
+                    <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 1rem; border-radius: var(--radius-sm); margin-bottom: 1rem;">
+                        <p style="margin: 0; color: #856404; font-size: 0.9rem;">
+                            <strong>⚠️ Limitação do Navegador:</strong><br>
+                            Por questões de segurança, navegadores não permitem abrir pastas diretamente no Windows Explorer via JavaScript.
+                        </p>
+                    </div>
+
+                    <h4 style="color: var(--text-primary); margin: 1rem 0 0.5rem 0;">Como encontrar a pasta manualmente:</h4>
+                    <ol style="color: var(--text-secondary); font-size: 0.9rem; padding-left: 1.5rem; margin: 0;">
+                        <li style="margin-bottom: 0.5rem;">Abra o <strong>Windows Explorer</strong> (tecla Windows + E)</li>
+                        <li style="margin-bottom: 0.5rem;">Procure pela pasta chamada: <code style="background: var(--bg-hover); padding: 0.2rem 0.5rem; border-radius: 3px; color: var(--accent-primary);">${rootFolder.name}</code></li>
+                        <li style="margin-bottom: 0.5rem;">Ela deve estar no local onde você selecionou inicialmente</li>
+                    </ol>
+
+                    <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+                        <button onclick="this.closest('.modal').remove()" class="btn-primary" style="width: 100%;">
+                            ✅ Entendi
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        // Fechar modal ao clicar fora
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+            }
+        });
     }
 
     // Adiciona pasta raiz a partir de um handle
