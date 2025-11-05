@@ -415,7 +415,7 @@ class ScriptCopierApp {
         }
 
         // Preencher dropdown
-        dropdown.innerHTML = '<option value="">Selecione pasta raiz</option>';
+        dropdown.innerHTML = '<option value="" disabled selected>Selecione pasta raiz</option>';
         this.rootFolders.forEach(rf => {
             const option = document.createElement('option');
             option.value = rf.id;
@@ -952,7 +952,7 @@ class ScriptCopierApp {
         panel.style.display = 'block';
 
         // Limpar dropdown
-        selector.innerHTML = '<option value="">Selecione um arquivo...</option>';
+        selector.innerHTML = '<option value="" disabled selected>Selecione um arquivo...</option>';
 
         // Adicionar arquivos
         project.files.forEach((file, index) => {
