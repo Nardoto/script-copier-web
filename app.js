@@ -1,12 +1,12 @@
 // ========================================
 // SCRIPT COPIER WEB - Desktop Layout
 // Portado de ScriptCopier_UNIVERSAL.py
-// Version: 2.5.0 - Gerenciador de pastas raiz múltiplas
+// Version: 2.6.0 - Sistema de Estatísticas e Análise de Projetos
 // ========================================
 
 class ScriptCopierApp {
     constructor() {
-        console.log('🚀 Script Copier v2.5.0 - Gerenciador de pastas raiz múltiplas');
+        console.log('🚀 Script Copier v2.6.0 - Sistema de Estatísticas e Análise de Projetos');
 
         // Nova estrutura: múltiplas pastas raiz
         this.rootFolders = []; // Array de {id, name, handle, projects}
@@ -144,6 +144,11 @@ class ScriptCopierApp {
                     this.copyToClipboard(element.value || element.textContent);
                 }
             });
+        });
+
+        // Analyze project button
+        document.getElementById('analyzeProjectButton')?.addEventListener('click', () => {
+            this.analyzeCurrentProject();
         });
 
         // Keyboard shortcuts
@@ -780,6 +785,10 @@ class ScriptCopierApp {
         document.getElementById('projectDropdown').value = projectName;
         document.getElementById('folderPathDisplay').textContent = this.projects[projectName].path || projectName;
 
+        // Mostrar botão "Analisar Projeto"
+        const analyzeBtn = document.getElementById('analyzeProjectButton');
+        if (analyzeBtn) analyzeBtn.style.display = 'inline-flex';
+
         this.renderSections();
         this.renderFiles();
         this.loadYoutubeDataForProject(projectName);
@@ -1221,6 +1230,180 @@ class ScriptCopierApp {
         } catch (err) {
             console.error('Erro ao carregar:', err);
         }
+    }
+
+    // ========================================
+    // PROJECT STATISTICS
+    // ========================================
+
+    analyzeCurrentProject() {
+        if (!this.currentProject || !this.projects[this.currentProject]) {
+            this.showToast('⚠️ Selecione um projeto primeiro', 'error');
+            return;
+        }
+
+        const project = this.projects[this.currentProject];
+        const stats = this.calculateProjectStats(project);
+        const comparison = this.compareWithOtherProjects(this.currentProject, stats);
+
+        this.showStatsModal(stats, comparison);
+    }
+
+    calculateProjectStats(project) {
+        let totalWords = 0;
+        let totalChars = 0;
+        let oldestDate = Date.now();
+        let newestDate = 0;
+
+        project.files.forEach(file => {
+            const words = this.countWords(file.content);
+            totalWords += words;
+            totalChars += file.content.length;
+
+            if (file.lastModified < oldestDate) oldestDate = file.lastModified;
+            if (file.lastModified > newestDate) newestDate = file.lastModified;
+        });
+
+        // Tempo estimado: 150 palavras por minuto é velocidade média de narração
+        const estimatedMinutes = Math.round(totalWords / 150);
+
+        return {
+            projectName: project.name,
+            fileCount: project.files.length,
+            totalWords,
+            totalChars,
+            estimatedDuration: estimatedMinutes,
+            createdDate: new Date(oldestDate),
+            lastModified: new Date(newestDate),
+            files: project.files.map(f => ({
+                name: f.name,
+                size: f.size,
+                words: this.countWords(f.content)
+            }))
+        };
+    }
+
+    compareWithOtherProjects(currentProjectName, currentStats) {
+        const allProjects = Object.values(this.projects).filter(p => p.name !== currentProjectName);
+
+        if (allProjects.length === 0) {
+            return null;
+        }
+
+        let totalWords = 0;
+        let totalFiles = 0;
+
+        allProjects.forEach(p => {
+            totalFiles += p.files.length;
+            p.files.forEach(f => {
+                totalWords += this.countWords(f.content);
+            });
+        });
+
+        const avgWords = totalWords / allProjects.length;
+        const avgFiles = totalFiles / allProjects.length;
+
+        const wordsDiff = ((currentStats.totalWords - avgWords) / avgWords * 100).toFixed(0);
+        const filesDiff = ((currentStats.fileCount - avgFiles) / avgFiles * 100).toFixed(0);
+
+        return {
+            projectCount: allProjects.length,
+            avgWords: Math.round(avgWords),
+            avgFiles: Math.round(avgFiles),
+            wordsDiff: parseFloat(wordsDiff),
+            filesDiff: parseFloat(filesDiff)
+        };
+    }
+
+    showStatsModal(stats, comparison) {
+        const modal = document.getElementById('statsModal');
+        const body = document.getElementById('statsModalBody');
+
+        if (!modal || !body) return;
+
+        const html = `
+            <div style="text-align: center; margin-bottom: 1.5rem;">
+                <h1 style="color: var(--accent-primary); font-size: 2rem; margin: 0;">${stats.projectName}</h1>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value">${stats.fileCount}</div>
+                    <div class="stat-label">📄 Arquivos</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${stats.totalWords.toLocaleString('pt-BR')}</div>
+                    <div class="stat-label">💬 Palavras</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${stats.totalChars.toLocaleString('pt-BR')}</div>
+                    <div class="stat-label">🔤 Caracteres</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${stats.estimatedDuration} min</div>
+                    <div class="stat-label">⏱️ Tempo estimado</div>
+                </div>
+            </div>
+
+            <hr style="margin: 2rem 0; border: none; border-top: 1px solid var(--border-color);">
+
+            <h3 style="color: var(--accent-primary); margin-bottom: 1rem;">📅 Datas</h3>
+            <div style="margin-bottom: 1rem;">
+                <strong>Criado:</strong> ${stats.createdDate.toLocaleDateString('pt-BR')}<br>
+                <strong>Última edição:</strong> ${this.getRelativeTime(stats.lastModified)}
+            </div>
+
+            ${comparison ? `
+                <hr style="margin: 2rem 0; border: none; border-top: 1px solid var(--border-color);">
+                <h3 style="color: var(--accent-primary); margin-bottom: 1rem;">📊 Comparação com outros projetos</h3>
+                <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1rem;">
+                    Comparando com ${comparison.projectCount} projeto(s)
+                </p>
+
+                <div class="comparison-item">
+                    <span class="comparison-icon">${comparison.wordsDiff > 0 ? '▲' : '▼'}</span>
+                    <span><strong>${Math.abs(comparison.wordsDiff)}%</strong> ${comparison.wordsDiff > 0 ? 'maior' : 'menor'} que a média (${comparison.avgWords.toLocaleString('pt-BR')} palavras)</span>
+                </div>
+
+                <div class="comparison-item">
+                    <span class="comparison-icon">${comparison.filesDiff > 0 ? '▲' : '▼'}</span>
+                    <span><strong>${Math.abs(comparison.filesDiff)}%</strong> ${comparison.filesDiff > 0 ? 'mais' : 'menos'} arquivos que a média (${comparison.avgFiles} arquivos)</span>
+                </div>
+            ` : `
+                <hr style="margin: 2rem 0; border: none; border-top: 1px solid var(--border-color);">
+                <p style="text-align: center; color: var(--text-muted);">
+                    Adicione mais projetos para ver comparações
+                </p>
+            `}
+
+            <hr style="margin: 2rem 0; border: none; border-top: 1px solid var(--border-color);">
+
+            <h3 style="color: var(--accent-primary); margin-bottom: 1rem;">📁 Detalhes dos arquivos</h3>
+            <div style="max-height: 200px; overflow-y: auto;">
+                ${stats.files.map(f => `
+                    <div style="padding: 0.5rem; margin: 0.25rem 0; background: var(--bg-hover); border-radius: var(--radius-sm); display: flex; justify-content: space-between;">
+                        <span style="font-weight: 500;">${f.name}</span>
+                        <span style="color: var(--text-secondary);">${f.words} palavras • ${(f.size / 1024).toFixed(1)} KB</span>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+
+        body.innerHTML = html;
+        modal.style.display = 'block';
+    }
+
+    getRelativeTime(date) {
+        const now = new Date();
+        const diff = now - date;
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+        if (days === 0) return 'Hoje';
+        if (days === 1) return 'Ontem';
+        if (days < 7) return `${days} dias atrás`;
+        if (days < 30) return `${Math.floor(days / 7)} semanas atrás`;
+        if (days < 365) return `${Math.floor(days / 30)} meses atrás`;
+        return `${Math.floor(days / 365)} anos atrás`;
     }
 
     // ========================================

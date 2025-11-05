@@ -948,6 +948,68 @@ textarea:focus {
     background: var(--bg-hover);
 }
 
+.btn-analyze {
+    background: var(--accent-secondary);
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+}
+
+.btn-analyze:hover {
+    background: #97c9a9;
+    transform: translateY(-1px);
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    margin: 1.5rem 0;
+}
+
+.stat-card {
+    background: var(--bg-hover);
+    padding: 1rem;
+    border-radius: var(--radius-sm);
+    border: 2px solid var(--border-color);
+}
+
+.stat-value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--accent-primary);
+    margin-bottom: 0.25rem;
+}
+
+.stat-label {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.comparison-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    margin: 0.5rem 0;
+    background: var(--bg-hover);
+    border-radius: var(--radius-sm);
+}
+
+.comparison-icon {
+    font-size: 1.2rem;
+}
+
 /* ========================================
    SCROLLBAR CUSTOMIZATION
    ======================================== */
