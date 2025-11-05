@@ -15,7 +15,7 @@
     <header class="header">
         <div class="header-content">
             <div class="logo">
-                <h1>Script Copier Universal</h1>
+                <h1>SCRIPT COPIER UNIVERSAL</h1>
                 <span class="version">Web Edition v1.0</span>
             </div>
             <div class="header-actions">
@@ -33,6 +33,12 @@
                     </svg>
                     Atualizar
                 </button>
+                <button id="saveButton" class="btn-success" style="display: none;">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M16 4L7 13L3 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Salvar Estado
+                </button>
                 <input type="file" id="fileInput" webkitdirectory directory multiple style="display: none;">
             </div>
         </div>
@@ -41,17 +47,33 @@
     <!-- Main Container -->
     <div class="container">
         <!-- Project Selector -->
-        <div id="projectSelector" class="project-selector">
-            <div class="empty-state">
-                <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
-                    <path d="M20 26.6667L40 13.3334L60 26.6667V53.3334L40 66.6667L20 53.3334V26.6667Z" stroke="#cb6246" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M20 26.6667L40 40L60 26.6667M40 66.6667V40" stroke="#cb6246" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        <div class="project-selector-bar" id="projectSelectorBar" style="display: none;">
+            <label for="projectDropdown">Selecione o Roteiro:</label>
+            <select id="projectDropdown" class="project-dropdown">
+                <option value="">Nenhum projeto selecionado</option>
+            </select>
+            <button id="openFolderButton" class="btn-icon" title="Abrir pasta do projeto">
+                <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+                    <path d="M3 5C3 3.89543 3.89543 3 5 3H8L10 5H15C16.1046 5 17 5.89543 17 7V15C17 16.1046 16.1046 17 15 17H5C3.89543 17 3 16.1046 3 15V5Z" stroke="currentColor" stroke-width="2"/>
                 </svg>
-                <h2>Nenhuma pasta carregada</h2>
-                <p>Clique em "Carregar Pasta de Roteiros" e selecione a pasta raiz contendo as subpastas dos seus projetos</p>
-                <p style="font-size: 0.9rem; color: var(--text-muted); margin-top: 1rem;">📂 Estrutura esperada: Pasta Raiz → Subpastas (Projetos) → Arquivos .txt</p>
-            </div>
-            <div id="projectList" class="project-list" style="display: none;"></div>
+            </button>
+            <button id="reloadProjectButton" class="btn-icon" title="Recarregar projeto">
+                <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+                    <path d="M17 10C17 13.866 13.866 17 10 17C6.13401 17 3 13.866 3 10C3 6.13401 6.13401 3 10 3C12.5 3 14.6667 4.33333 16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+            </button>
+            <span id="folderPathDisplay" class="folder-path"></span>
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="empty-state-large">
+            <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
+                <path d="M20 26.6667L40 13.3334L60 26.6667V53.3334L40 66.6667L20 53.3334V26.6667Z" stroke="#cb6246" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M20 26.6667L40 40L60 26.6667M40 66.6667V40" stroke="#cb6246" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <h2>Nenhuma pasta selecionada</h2>
+            <p>Clique em "Selecionar Pasta" e escolha a pasta raiz contendo as subpastas dos seus projetos</p>
+            <p class="folder-structure-hint">📂 Estrutura esperada: Pasta Raiz → Subpastas (Projetos) → Arquivos .txt</p>
         </div>
 
         <!-- Tabs -->
@@ -67,7 +89,7 @@
                 </button>
                 <button class="tab-button" data-tab="view">
                     <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                        <path d="M3 4H17M3 10H17M3 16H17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        <path d="M4 6H16M4 10H16M4 14H16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                     </svg>
                     Visualizar Arquivos
                 </button>
@@ -76,81 +98,204 @@
                         <rect x="2" y="4" width="16" height="12" rx="2" stroke="currentColor" stroke-width="2"/>
                         <path d="M8 7L13 10L8 13V7Z" fill="currentColor"/>
                     </svg>
-                    YouTube
+                    Título e Descrição
                 </button>
             </div>
 
             <!-- Tab Content -->
             <div class="tabs-content">
-                <!-- Copy Tab -->
+                <!-- Copy Tab - Layout 2 colunas -->
                 <div id="copyTab" class="tab-content active">
-                    <div class="sections-container">
-                        <div id="sectionsList" class="sections-list"></div>
+                    <div class="two-column-layout">
+                        <!-- Coluna Esquerda: Lista de Seções -->
+                        <div class="sections-column">
+                            <h3 class="column-title">
+                                <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+                                    <path d="M4 6H16M4 10H16M4 14H10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                </svg>
+                                SEÇÕES DO ROTEIRO
+                            </h3>
+                            <div id="sectionsList" class="sections-list">
+                                <div class="empty-message">
+                                    <p>Selecione um roteiro para visualizar as seções</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Coluna Direita: Preview do Texto -->
+                        <div class="preview-column">
+                            <h3 class="column-title">
+                                <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+                                    <path d="M10 3C5 3 1 10 1 10s4 7 9 7 9-7 9-7-4-7-9-7z" stroke="currentColor" stroke-width="2"/>
+                                    <circle cx="10" cy="10" r="3" stroke="currentColor" stroke-width="2"/>
+                                </svg>
+                                Visualização do Texto
+                            </h3>
+                            <div id="textPreview" class="text-preview">
+                                <div class="empty-message">
+                                    <svg width="60" height="60" viewBox="0 0 20 20" fill="none" style="opacity: 0.3;">
+                                        <path d="M1 1L19 19M1 19L19 1" stroke="currentColor" stroke-width="2"/>
+                                    </svg>
+                                    <p>Selecione uma seção ao lado para visualizar</p>
+                                    <p style="font-size: 0.9rem; color: var(--text-muted); margin-top: 0.5rem;">Você poderá copiar o texto com um clique!</p>
+                                </div>
+                            </div>
+                            <div id="previewActions" class="preview-actions" style="display: none;">
+                                <button id="copyTextButton" class="btn-copy-large">
+                                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                        <path d="M7 7V5C7 3.89543 7.89543 3 9 3H15C16.1046 3 17 3.89543 17 5V11C17 12.1046 16.1046 13 15 13H13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                        <rect x="3" y="7" width="10" height="10" rx="2" stroke="currentColor" stroke-width="2"/>
+                                    </svg>
+                                    Copiar Texto
+                                </button>
+                                <button id="saveTextButton" class="btn-save-text">
+                                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                        <path d="M4 4v12h12V7l-3-3H4z" stroke="currentColor" stroke-width="2"/>
+                                        <path d="M13 3v4H7V3M7 17v-6h6v6" stroke="currentColor" stroke-width="2"/>
+                                    </svg>
+                                    Salvar
+                                </button>
+                                <span id="copyCountInfo" class="copy-count-info"></span>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <!-- View Tab -->
+                <!-- View Tab - Lista de Arquivos -->
                 <div id="viewTab" class="tab-content">
-                    <div id="filesList" class="files-list"></div>
+                    <div class="files-view">
+                        <h3 class="files-title">
+                            <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+                                <path d="M3 3H8L10 5H17V15H3V3Z" stroke="currentColor" stroke-width="2"/>
+                            </svg>
+                            ARQUIVOS
+                        </h3>
+                        <div class="files-container">
+                            <div id="filesList" class="files-list">
+                                <div class="empty-message">
+                                    <p>Selecione um roteiro e arquivo para visualizar</p>
+                                    <p style="font-size: 0.9rem; color: var(--text-muted); margin-top: 0.5rem;">Você poderá navegar pelas partes e capítulos na árvore ao lado.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- YouTube Tab -->
                 <div id="youtubeTab" class="tab-content">
                     <div class="youtube-container">
-                        <div class="form-group">
-                            <label>Status do Vídeo</label>
-                            <div class="status-buttons">
-                                <button class="status-btn" data-status="new">⚪ Novo</button>
-                                <button class="status-btn" data-status="recorded">🎬 Gravado</button>
-                                <button class="status-btn" data-status="posted">✅ Postado</button>
+                        <div class="youtube-header">
+                            <h3>
+                                <svg width="22" height="22" viewBox="0 0 20 20" fill="none">
+                                    <rect x="2" y="4" width="16" height="12" rx="2" stroke="currentColor" stroke-width="2"/>
+                                    <path d="M8 7L13 10L8 13V7Z" fill="currentColor"/>
+                                </svg>
+                                INFORMAÇÕES DO VÍDEO
+                            </h3>
+                            <label class="video-status-checkbox">
+                                <input type="checkbox" id="videoPostedCheckbox">
+                                <span>Vídeo Postado</span>
+                            </label>
+                        </div>
+
+                        <div class="form-section">
+                            <label class="form-label">
+                                <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+                                    <path d="M4 6h12M4 10h12M4 14h8" stroke="currentColor" stroke-width="2"/>
+                                </svg>
+                                TÍTULOS SUGERIDOS (Curiosidade + Sensacional + Pergunta):
+                            </label>
+                            <div class="titles-grid">
+                                <div class="title-option">
+                                    <label>Opção 1:</label>
+                                    <input type="text" id="title1" placeholder="Digite o primeiro título...">
+                                    <button class="btn-copy-icon" data-target="title1">
+                                        <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+                                            <path d="M7 7V5C7 3.89543 7.89543 3 9 3H15C16.1046 3 17 3.89543 17 5V11C17 12.1046 16.1046 13 15 13H13" stroke="currentColor" stroke-width="2"/>
+                                            <rect x="3" y="7" width="10" height="10" rx="2" stroke="currentColor" stroke-width="2"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                                <div class="title-option">
+                                    <label>Opção 2:</label>
+                                    <input type="text" id="title2" placeholder="Digite o segundo título...">
+                                    <button class="btn-copy-icon" data-target="title2">
+                                        <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+                                            <path d="M7 7V5C7 3.89543 7.89543 3 9 3H15C16.1046 3 17 3.89543 17 5V11C17 12.1046 16.1046 13 15 13H13" stroke="currentColor" stroke-width="2"/>
+                                            <rect x="3" y="7" width="10" height="10" rx="2" stroke="currentColor" stroke-width="2"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                                <div class="title-option">
+                                    <label>Opção 3:</label>
+                                    <input type="text" id="title3" placeholder="Digite o terceiro título...">
+                                    <button class="btn-copy-icon" data-target="title3">
+                                        <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+                                            <path d="M7 7V5C7 3.89543 7.89543 3 9 3H15C16.1046 3 17 3.89543 17 5V11C17 12.1046 16.1046 13 15 13H13" stroke="currentColor" stroke-width="2"/>
+                                            <rect x="3" y="7" width="10" height="10" rx="2" stroke="currentColor" stroke-width="2"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                                <div class="title-option">
+                                    <label>Opção 4:</label>
+                                    <input type="text" id="title4" placeholder="Digite o quarto título...">
+                                    <button class="btn-copy-icon" data-target="title4">
+                                        <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+                                            <path d="M7 7V5C7 3.89543 7.89543 3 9 3H15C16.1046 3 17 3.89543 17 5V11C17 12.1046 16.1046 13 15 13H13" stroke="currentColor" stroke-width="2"/>
+                                            <rect x="3" y="7" width="10" height="10" rx="2" stroke="currentColor" stroke-width="2"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                                <div class="title-option">
+                                    <label>Opção 5:</label>
+                                    <input type="text" id="title5" placeholder="Digite o quinto título...">
+                                    <button class="btn-copy-icon" data-target="title5">
+                                        <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+                                            <path d="M7 7V5C7 3.89543 7.89543 3 9 3H15C16.1046 3 17 3.89543 17 5V11C17 12.1046 16.1046 13 15 13H13" stroke="currentColor" stroke-width="2"/>
+                                            <rect x="3" y="7" width="10" height="10" rx="2" stroke="currentColor" stroke-width="2"/>
+                                        </svg>
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="form-group">
-                            <label>Títulos (5 opções)</label>
-                            <textarea id="titles" rows="5" placeholder="Digite 5 opções de título, uma por linha..."></textarea>
+                        <div class="form-section">
+                            <label class="form-label">
+                                <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+                                    <path d="M3 3H17V14H3V3Z" stroke="currentColor" stroke-width="2"/>
+                                    <path d="M7 14V17M13 14V17M5 17H15" stroke="currentColor" stroke-width="2"/>
+                                </svg>
+                                DESCRIÇÃO PARA YOUTUBE (com gancho):
+                            </label>
+                            <textarea id="description" rows="10" placeholder="Digite a descrição do vídeo com gancho para prender a atenção..."></textarea>
+                            <button class="btn-copy-icon" data-target="description" style="position: absolute; right: 10px; top: 40px;">
+                                <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+                                    <path d="M7 7V5C7 3.89543 7.89543 3 9 3H15C16.1046 3 17 3.89543 17 5V11C17 12.1046 16.1046 13 15 13H13" stroke="currentColor" stroke-width="2"/>
+                                    <rect x="3" y="7" width="10" height="10" rx="2" stroke="currentColor" stroke-width="2"/>
+                                </svg>
+                            </button>
                         </div>
 
-                        <div class="form-group">
-                            <label>Descrição do YouTube</label>
-                            <textarea id="description" rows="8" placeholder="Digite a descrição do vídeo..."></textarea>
+                        <div class="form-section">
+                            <label class="form-label">
+                                <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+                                    <rect x="3" y="3" width="14" height="14" rx="2" stroke="currentColor" stroke-width="2"/>
+                                    <circle cx="7" cy="7" r="2" stroke="currentColor" stroke-width="2"/>
+                                    <path d="M14 14L10 10L3 17" stroke="currentColor" stroke-width="2"/>
+                                </svg>
+                                IDEIAS PARA THUMBNAIL:
+                            </label>
+                            <textarea id="thumbnail" rows="5" placeholder="Descreva ideias visuais para a thumbnail (elementos, cores, texto, composição...)"></textarea>
                         </div>
 
-                        <div class="form-group">
-                            <label>Ideias para Thumbnail</label>
-                            <textarea id="thumbnail" rows="4" placeholder="Descreva ideias para a thumbnail..."></textarea>
-                        </div>
-
-                        <button class="btn-primary btn-full" id="saveYoutubeData">
+                        <button class="btn-save-youtube" id="saveYoutubeData">
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                <path d="M16 4L7 13L3 9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
                             Salvar Informações
                         </button>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Section Detail Modal -->
-    <div id="sectionModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="modalSectionTitle"></h2>
-                <button class="modal-close" onclick="closeModal()">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div id="modalSectionText" class="section-text"></div>
-            </div>
-            <div class="modal-footer">
-                <div class="copy-info">
-                    <span id="modalCopyCount">Nunca copiado</span>
-                </div>
-                <button class="btn-primary" id="modalCopyButton">
-                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                        <path d="M7 7V5C7 3.89543 7.89543 3 9 3H15C16.1046 3 17 3.89543 17 5V11C17 12.1046 16.1046 13 15 13H13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                        <rect x="3" y="7" width="10" height="10" rx="2" stroke="currentColor" stroke-width="2"/>
-                    </svg>
-                    Copiar Texto
-                </button>
             </div>
         </div>
     </div>

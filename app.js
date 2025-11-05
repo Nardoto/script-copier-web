@@ -1,5 +1,5 @@
 // ========================================
-// SCRIPT COPIER WEB - Main Application
+// SCRIPT COPIER WEB - Desktop Layout
 // Portado de ScriptCopier_UNIVERSAL.py
 // ========================================
 
@@ -7,34 +7,49 @@ class ScriptCopierApp {
     constructor() {
         this.projects = {};
         this.currentProject = null;
+        this.currentSection = null;
         this.copyHistory = this.loadHistory();
-        this.directoryHandle = null; // Handle para acesso direto à pasta
+        this.youtubeData = this.loadYoutubeData();
+        this.directoryHandle = null;
         this.init();
     }
 
     init() {
         this.setupEventListeners();
         this.loadFromLocalStorage();
-        this.updateRefreshButtonVisibility();
+        this.updateUI();
         this.checkSavedDirectory();
     }
 
+    // ========================================
+    // EVENT LISTENERS
+    // ========================================
+
     setupEventListeners() {
-        // Upload button - agora usa File System Access API
+        // Header buttons
         document.getElementById('uploadButton').addEventListener('click', () => {
             this.selectDirectory();
         });
 
-        // Refresh button - recarrega arquivos da pasta
-        document.getElementById('refreshButton').addEventListener('click', () => {
+        document.getElementById('refreshButton')?.addEventListener('click', () => {
             if (this.directoryHandle) {
                 this.readDirectoryFiles(this.directoryHandle);
             }
         });
 
-        // Fallback para navegadores sem suporte
+        document.getElementById('saveButton')?.addEventListener('click', () => {
+            this.saveToLocalStorage();
+            this.showToast('Estado salvo com sucesso!', 'success');
+        });
+
+        // Fallback file input
         document.getElementById('fileInput').addEventListener('change', (e) => {
             this.handleFileUpload(e.target.files);
+        });
+
+        // Project dropdown
+        document.getElementById('projectDropdown')?.addEventListener('change', (e) => {
+            this.selectProject(e.target.value);
         });
 
         // Tab navigation
@@ -44,41 +59,49 @@ class ScriptCopierApp {
             });
         });
 
-        // YouTube save button
+        // Preview actions
+        document.getElementById('copyTextButton')?.addEventListener('click', () => {
+            this.copyCurrentSection();
+        });
+
+        document.getElementById('saveTextButton')?.addEventListener('click', () => {
+            this.saveCurrentSection();
+        });
+
+        // YouTube form
         document.getElementById('saveYoutubeData')?.addEventListener('click', () => {
             this.saveYoutubeData();
         });
 
-        // Status buttons
-        document.querySelectorAll('.status-btn').forEach(btn => {
+        // Copy buttons for YouTube fields
+        document.querySelectorAll('.btn-copy-icon').forEach(btn => {
             btn.addEventListener('click', () => {
-                document.querySelectorAll('.status-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
+                const targetId = btn.dataset.target;
+                const element = document.getElementById(targetId);
+                if (element) {
+                    this.copyToClipboard(element.value || element.textContent);
+                }
             });
-        });
-
-        // Modal copy button
-        document.getElementById('modalCopyButton')?.addEventListener('click', () => {
-            this.copyCurrentSection();
         });
 
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
-                this.closeModal();
+                this.clearSelection();
             }
-            if (e.ctrlKey && e.key === 'c' && !window.getSelection().toString()) {
-                // Implementar copiar seção atual se necessário
+            if (e.ctrlKey && e.key === 's') {
+                e.preventDefault();
+                this.saveToLocalStorage();
+                this.showToast('Estado salvo!', 'success');
             }
         });
     }
 
     // ========================================
-    // FILE SYSTEM ACCESS API (Acesso Direto à Pasta)
+    // FILE SYSTEM ACCESS API
     // ========================================
 
     async selectDirectory() {
-        // Verifica se o navegador suporta File System Access API
         if (!('showDirectoryPicker' in window)) {
             this.showToast('⚠️ Navegador não suporta acesso direto. Use upload de pasta.', 'error');
             document.getElementById('fileInput').click();
@@ -86,7 +109,6 @@ class ScriptCopierApp {
         }
 
         try {
-            // Solicita acesso à pasta
             const dirHandle = await window.showDirectoryPicker({
                 mode: 'read',
                 startIn: 'documents'
@@ -94,13 +116,8 @@ class ScriptCopierApp {
 
             this.directoryHandle = dirHandle;
             await this.saveDirectoryHandle(dirHandle);
-
             this.showToast(`📁 Pasta "${dirHandle.name}" selecionada!`, 'success');
-            this.updateRefreshButtonVisibility();
-
-            // Lê todos os arquivos da pasta
             await this.readDirectoryFiles(dirHandle);
-
         } catch (err) {
             if (err.name !== 'AbortError') {
                 console.error('Erro ao selecionar pasta:', err);
@@ -111,24 +128,19 @@ class ScriptCopierApp {
 
     async checkSavedDirectory() {
         const savedHandle = await this.loadDirectoryHandle();
-
         if (!savedHandle) return;
 
         try {
-            // Verifica se ainda tem permissão
             const permission = await savedHandle.queryPermission({ mode: 'read' });
 
             if (permission === 'granted') {
                 this.directoryHandle = savedHandle;
                 this.showToast(`✅ Pasta "${savedHandle.name}" reconectada!`, 'success');
-                this.updateRefreshButtonVisibility();
                 await this.readDirectoryFiles(savedHandle);
             } else if (permission === 'prompt') {
-                // Pede permissão novamente
                 const newPermission = await savedHandle.requestPermission({ mode: 'read' });
                 if (newPermission === 'granted') {
                     this.directoryHandle = savedHandle;
-                    this.updateRefreshButtonVisibility();
                     await this.readDirectoryFiles(savedHandle);
                 }
             }
@@ -140,17 +152,13 @@ class ScriptCopierApp {
 
     async readDirectoryFiles(dirHandle) {
         this.showToast('Lendo arquivos da pasta...', 'info');
-
         const projectMap = {};
 
-        // Percorre todas as entradas (pastas e arquivos)
         for await (const entry of dirHandle.values()) {
-            // Se for uma subpasta
             if (entry.kind === 'directory') {
                 const projectName = entry.name;
                 const files = [];
 
-                // Lê arquivos dentro da subpasta
                 for await (const fileEntry of entry.values()) {
                     if (fileEntry.kind === 'file' && fileEntry.name.endsWith('.txt')) {
                         const file = await fileEntry.getFile();
@@ -160,7 +168,8 @@ class ScriptCopierApp {
                             name: file.name,
                             content: content,
                             size: file.size,
-                            relativePath: `${projectName}/${file.name}`
+                            relativePath: `${projectName}/${file.name}`,
+                            lastModified: file.lastModified
                         });
                     }
                 }
@@ -173,28 +182,6 @@ class ScriptCopierApp {
                     };
                 }
             }
-            // Se for arquivo .txt direto na raiz
-            else if (entry.kind === 'file' && entry.name.endsWith('.txt')) {
-                const file = await entry.getFile();
-                const content = await file.text();
-
-                const projectName = dirHandle.name;
-
-                if (!projectMap[projectName]) {
-                    projectMap[projectName] = {
-                        name: projectName,
-                        files: [],
-                        path: ''
-                    };
-                }
-
-                projectMap[projectName].files.push({
-                    name: file.name,
-                    content: content,
-                    size: file.size,
-                    relativePath: file.name
-                });
-            }
         }
 
         // Parse sections for each project
@@ -204,13 +191,15 @@ class ScriptCopierApp {
         });
 
         this.saveToLocalStorage();
-        this.renderProjects();
+        this.renderProjectDropdown();
+        this.updateUI();
 
         const projectCount = Object.keys(projectMap).length;
         const fileCount = Object.values(projectMap).reduce((sum, p) => sum + p.files.length, 0);
         this.showToast(`${projectCount} projeto(s) • ${fileCount} arquivo(s) lidos!`, 'success');
     }
 
+    // IndexedDB methods for directory handle
     async saveDirectoryHandle(dirHandle) {
         try {
             const db = await this.openDatabase();
@@ -249,10 +238,8 @@ class ScriptCopierApp {
     async openDatabase() {
         return new Promise((resolve, reject) => {
             const request = indexedDB.open('ScriptCopierDB', 1);
-
             request.onerror = () => reject(request.error);
             request.onsuccess = () => resolve(request.result);
-
             request.onupgradeneeded = (event) => {
                 const db = event.target.result;
                 if (!db.objectStoreNames.contains('handles')) {
@@ -262,41 +249,22 @@ class ScriptCopierApp {
         });
     }
 
-    updateRefreshButtonVisibility() {
-        const refreshButton = document.getElementById('refreshButton');
-        const uploadButton = document.getElementById('uploadButton');
-
-        if (this.directoryHandle) {
-            refreshButton.style.display = 'inline-flex';
-            uploadButton.textContent = 'Alterar Pasta';
-        } else {
-            refreshButton.style.display = 'none';
-            uploadButton.textContent = 'Selecionar Pasta';
-        }
-    }
-
     // ========================================
-    // FILE UPLOAD & PARSING (Fallback)
+    // FILE UPLOAD (Fallback)
     // ========================================
 
     async handleFileUpload(files) {
         if (files.length === 0) return;
 
-        this.showToast('Processando estrutura de pastas...', 'info');
-
-        // Group files by project (actual folder structure)
+        this.showToast('Processando arquivos...', 'info');
         const projectMap = {};
 
         for (const file of files) {
-            // Only process .txt files
             if (!file.name.endsWith('.txt')) continue;
 
-            // Extract project name from file path
             const projectName = this.extractProjectNameFromPath(file.webkitRelativePath || file.name);
-
             if (!projectName) continue;
 
-            // Create project if doesn't exist
             if (!projectMap[projectName]) {
                 projectMap[projectName] = {
                     name: projectName,
@@ -305,25 +273,25 @@ class ScriptCopierApp {
                 };
             }
 
-            // Read file content
             const content = await this.readFile(file);
 
             projectMap[projectName].files.push({
                 name: file.name,
                 content: content,
                 size: file.size,
-                relativePath: file.webkitRelativePath
+                relativePath: file.webkitRelativePath,
+                lastModified: file.lastModified
             });
         }
 
-        // Parse sections for each project
         Object.values(projectMap).forEach(project => {
             project.sections = this.parseAllSections(project);
             this.projects[project.name] = project;
         });
 
         this.saveToLocalStorage();
-        this.renderProjects();
+        this.renderProjectDropdown();
+        this.updateUI();
 
         const projectCount = Object.keys(projectMap).length;
         const fileCount = Object.values(projectMap).reduce((sum, p) => sum + p.files.length, 0);
@@ -332,24 +300,15 @@ class ScriptCopierApp {
 
     extractProjectNameFromPath(path) {
         if (!path) return null;
-
-        // Path format: "RootFolder/ProjectFolder/file.txt"
-        // We want "ProjectFolder"
         const parts = path.split('/');
-
-        if (parts.length < 2) {
-            // No subfolder, use root as project name
-            return parts[0] || 'Projeto Principal';
-        }
-
-        // Get the folder name (second to last part, before filename)
+        if (parts.length < 2) return parts[0] || 'Projeto Principal';
         return parts[parts.length - 2];
     }
 
     extractProjectPath(path) {
         if (!path) return '';
         const parts = path.split('/');
-        parts.pop(); // Remove filename
+        parts.pop();
         return parts.join('/');
     }
 
@@ -362,373 +321,461 @@ class ScriptCopierApp {
     }
 
     // ========================================
-    // SECTION PARSING (Portado do Python)
+    // SECTION PARSING
     // ========================================
 
     parseAllSections(project) {
         const sections = [];
 
         project.files.forEach(file => {
-            const fileSections = this.detectSections(file.content, file.name);
+            const fileSections = this.parseSections(file.content, file.name);
             sections.push(...fileSections);
         });
 
         return sections;
     }
 
-    detectSections(text, filename) {
-        // Padrões de seção (portados de ScriptCopier_UNIVERSAL.py)
+    parseSections(content, fileName) {
+        const sections = [];
         const patterns = [
-            { regex: /^HOOK\s*\(.*?\).*?$/gm, type: 'HOOK' },
-            { regex: /^ATO\s+[IVXLCDM]+\s*[-–]\s*(.+?)(?:\s*▓▓▓)?$/gm, type: 'ATO' },
-            { regex: /^ACT\s+[IVXLCDM]+\s*[-–]\s*(.+?)(?:\s*▓▓▓)?$/gm, type: 'ACT' },
-            { regex: /^CONCLUS[ÃA]O\s*(?:[-–]\s*(.+?))?(?:\s*▓▓▓)?$/gm, type: 'CONCLUSÃO' },
-            { regex: /^CHAPTER\s+\w+\s*[-–]\s*(.+)$/gm, type: 'CHAPTER' },
-            { regex: /^SCENE\s+\d+\s*[-–]\s*(.+)$/gm, type: 'SCENE' },
-            { regex: /^OPENING\s*[-–]?\s*(.*)$/gm, type: 'OPENING' },
-            { regex: /^CENA\s+\d+\s*[-–]\s*(.+)$/gm, type: 'CENA' },
-            { regex: /^#{1,3}\s*(.+)$/gm, type: 'HEADING' }
+            { regex: /^OPENING\s*[-–]?\s*(.*)$/gmi, type: 'OPENING' },
+            { regex: /^HOOK\s*\((.+?)\).*$/gmi, type: 'HOOK' },
+            { regex: /^(ATO|ACT)\s+([IVXLCDM]+|ONE|TWO|THREE|FOUR|FIVE|SIX|SEVEN|EIGHT|NINE|TEN)\s*[-–]\s*(.+?)(?:\s*▓▓▓)?$/gmi, type: 'ATO' },
+            { regex: /^CHAPTER\s+(ONE|TWO|THREE|FOUR|FIVE|SIX|SEVEN|EIGHT|NINE|TEN|\w+)\s*[-–]\s*(.+?)$/gmi, type: 'CHAPTER' },
+            { regex: /^(CONCLUS[ÃA]O|CONCLUSION)\s*[-–]?\s*(.*)(?:\s*▓▓▓)?$/gmi, type: 'CONCLUSÃO' },
+            { regex: /^SCENE\s+\d+\s*[-–]\s*(.+)$/gmi, type: 'SCENE' },
+            { regex: /^CENA\s+\d+\s*[-–]\s*(.+)$/gmi, type: 'CENA' }
         ];
 
-        const sections = [];
-        const matches = [];
+        const lines = content.split('\n');
+        let currentSection = null;
+        let sectionContent = [];
 
-        // Find all section markers
-        patterns.forEach(({ regex, type }) => {
-            let match;
-            regex.lastIndex = 0;
-            while ((match = regex.exec(text)) !== null) {
-                matches.push({
-                    type,
-                    title: match[0].trim(),
-                    index: match.index
-                });
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i].trim();
+
+            let matched = false;
+            for (const pattern of patterns) {
+                const match = line.match(new RegExp(pattern.regex.source, 'i'));
+                if (match) {
+                    // Save previous section
+                    if (currentSection) {
+                        sections.push({
+                            ...currentSection,
+                            text: sectionContent.join('\n').trim(),
+                            wordCount: this.countWords(sectionContent.join('\n'))
+                        });
+                    }
+
+                    // Start new section
+                    currentSection = {
+                        title: line,
+                        type: pattern.type,
+                        fileName: fileName,
+                        lineNumber: i + 1
+                    };
+                    sectionContent = [];
+                    matched = true;
+                    break;
+                }
             }
-        });
 
-        // Sort by position
-        matches.sort((a, b) => a.index - b.index);
+            if (!matched && currentSection) {
+                sectionContent.push(line);
+            }
+        }
 
-        // Extract text between sections
-        for (let i = 0; i < matches.length; i++) {
-            const current = matches[i];
-            const next = matches[i + 1];
-
-            const startPos = current.index;
-            const endPos = next ? next.index : text.length;
-
-            let sectionText = text.substring(startPos, endPos).trim();
-
-            // Remove the title from the text
-            sectionText = sectionText.substring(current.title.length).trim();
-
-            // Count words and characters
-            const wordCount = sectionText.split(/\s+/).filter(w => w.length > 0).length;
-            const charCount = sectionText.length;
-
+        // Save last section
+        if (currentSection) {
             sections.push({
-                id: `${filename}_${i}`,
-                type: current.type,
-                title: current.title,
-                text: sectionText,
-                filename,
-                wordCount,
-                charCount,
-                position: i + 1
+                ...currentSection,
+                text: sectionContent.join('\n').trim(),
+                wordCount: this.countWords(sectionContent.join('\n'))
             });
         }
 
         return sections;
     }
 
-    // ========================================
-    // CLIPBOARD & COPY HISTORY
-    // ========================================
-
-    async copyToClipboard(text, sectionId, sectionTitle) {
-        try {
-            await navigator.clipboard.writeText(text);
-
-            // Update copy history
-            this.updateCopyHistory(sectionId, sectionTitle);
-
-            this.showToast('✓ Texto copiado!', 'success');
-            this.updateSectionUI(sectionId);
-
-            return true;
-        } catch (err) {
-            console.error('Erro ao copiar:', err);
-            this.showToast('Erro ao copiar texto', 'error');
-            return false;
-        }
-    }
-
-    updateCopyHistory(sectionId, sectionTitle) {
-        const now = new Date().toISOString();
-
-        if (!this.copyHistory[this.currentProject]) {
-            this.copyHistory[this.currentProject] = {};
-        }
-
-        if (!this.copyHistory[this.currentProject][sectionId]) {
-            this.copyHistory[this.currentProject][sectionId] = {
-                title: sectionTitle,
-                primeira_copia: now,
-                ultima_copia: now,
-                contador: 1
-            };
-        } else {
-            this.copyHistory[this.currentProject][sectionId].ultima_copia = now;
-            this.copyHistory[this.currentProject][sectionId].contador++;
-        }
-
-        this.saveHistory();
-    }
-
-    getCopyInfo(sectionId) {
-        if (!this.currentProject || !this.copyHistory[this.currentProject]) {
-            return null;
-        }
-        return this.copyHistory[this.currentProject][sectionId];
+    countWords(text) {
+        return text.trim().split(/\s+/).filter(word => word.length > 0).length;
     }
 
     // ========================================
     // UI RENDERING
     // ========================================
 
-    renderProjects() {
-        const projectList = document.getElementById('projectList');
-        const emptyState = document.querySelector('.empty-state');
-        const tabsContainer = document.getElementById('tabsContainer');
+    updateUI() {
+        const hasProjects = Object.keys(this.projects).length > 0;
 
-        if (Object.keys(this.projects).length === 0) {
-            projectList.style.display = 'none';
-            emptyState.style.display = 'block';
-            tabsContainer.style.display = 'none';
-            return;
+        document.getElementById('emptyState').style.display = hasProjects ? 'none' : 'block';
+        document.getElementById('projectSelectorBar').style.display = hasProjects ? 'flex' : 'none';
+        document.getElementById('tabsContainer').style.display = hasProjects ? 'block' : 'none';
+        document.getElementById('refreshButton').style.display = this.directoryHandle ? 'inline-flex' : 'none';
+        document.getElementById('saveButton').style.display = hasProjects ? 'inline-flex' : 'none';
+
+        if (hasProjects && !this.currentProject) {
+            const firstProject = Object.keys(this.projects)[0];
+            this.selectProject(firstProject);
         }
+    }
 
-        emptyState.style.display = 'none';
-        projectList.style.display = 'grid';
-        tabsContainer.style.display = 'block';
+    renderProjectDropdown() {
+        const dropdown = document.getElementById('projectDropdown');
+        if (!dropdown) return;
 
-        projectList.innerHTML = Object.entries(this.projects).map(([name, project]) => {
-            const fileCount = project.files.length;
-            const sectionCount = project.sections.length;
-            const isActive = this.currentProject === name;
+        dropdown.innerHTML = '<option value="">Selecione um roteiro</option>';
 
-            return `
-                <div class="project-card ${isActive ? 'active' : ''}" onclick="app.selectProject('${name}')">
-                    <h3>${name}</h3>
-                    <div class="file-count">${fileCount} arquivo(s) • ${sectionCount} seção(ões)</div>
-                    <div class="status-indicator">📄</div>
-                </div>
-            `;
-        }).join('');
+        Object.keys(this.projects).sort().forEach(projectName => {
+            const option = document.createElement('option');
+            option.value = projectName;
+            option.textContent = projectName;
+            dropdown.appendChild(option);
+        });
 
-        // Select first project if none selected
-        if (!this.currentProject && Object.keys(this.projects).length > 0) {
-            this.selectProject(Object.keys(this.projects)[0]);
+        if (this.currentProject) {
+            dropdown.value = this.currentProject;
         }
     }
 
     selectProject(projectName) {
+        if (!projectName || !this.projects[projectName]) return;
+
         this.currentProject = projectName;
-        this.renderProjects();
+        this.currentSection = null;
+
+        document.getElementById('projectDropdown').value = projectName;
+        document.getElementById('folderPathDisplay').textContent = this.projects[projectName].path || projectName;
+
         this.renderSections();
         this.renderFiles();
+        this.loadYoutubeDataForProject(projectName);
+        this.clearPreview();
     }
 
     renderSections() {
-        const sectionsList = document.getElementById('sectionsList');
-        if (!this.currentProject) {
-            sectionsList.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">Selecione um projeto</p>';
-            return;
-        }
+        const container = document.getElementById('sectionsList');
+        if (!container || !this.currentProject) return;
 
         const project = this.projects[this.currentProject];
+
         if (!project.sections || project.sections.length === 0) {
-            sectionsList.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">Nenhuma seção detectada</p>';
+            container.innerHTML = '<div class="empty-message"><p>Nenhuma seção detectada neste projeto</p></div>';
             return;
         }
 
-        sectionsList.innerHTML = project.sections.map(section => {
-            const copyInfo = this.getCopyInfo(section.id);
-            const isCopied = copyInfo !== null;
+        container.innerHTML = '';
 
-            return `
-                <div class="section-card ${isCopied ? 'copied' : ''}" onclick="app.openSectionModal('${section.id}')">
-                    <div class="section-info">
-                        <h3>${section.title}</h3>
-                        <div class="section-meta">
-                            <span>${section.wordCount} palavras</span>
-                            <span>${section.charCount} caracteres</span>
-                            ${isCopied ? `<span class="copy-badge">Copiado ${copyInfo.contador}x</span>` : ''}
-                        </div>
-                    </div>
-                    <div class="section-action">
-                        ${isCopied ? '✓' : ''}
-                    </div>
+        project.sections.forEach((section, index) => {
+            const card = document.createElement('div');
+            card.className = 'section-card';
+            card.dataset.index = index;
+
+            // Check if was copied before
+            const copyInfo = this.getCopyInfo(project.name, section.title);
+            if (copyInfo && copyInfo.contador > 0) {
+                card.classList.add('copied');
+            }
+
+            card.innerHTML = `
+                <div class="section-title">${section.title}</div>
+                <div class="section-meta">
+                    <span class="word-count">${section.wordCount} palavras</span>
+                    ${copyInfo ? `<span class="copy-count">Copiado ${copyInfo.contador}x</span>` : ''}
                 </div>
             `;
-        }).join('');
+
+            card.addEventListener('click', () => {
+                this.selectSection(index);
+            });
+
+            container.appendChild(card);
+        });
+    }
+
+    selectSection(index) {
+        if (!this.currentProject) return;
+
+        const project = this.projects[this.currentProject];
+        if (!project.sections || !project.sections[index]) return;
+
+        this.currentSection = project.sections[index];
+
+        // Update active state
+        document.querySelectorAll('.section-card').forEach((card, i) => {
+            card.classList.toggle('active', i === index);
+        });
+
+        this.showPreview(this.currentSection);
+    }
+
+    showPreview(section) {
+        const preview = document.getElementById('textPreview');
+        const actions = document.getElementById('previewActions');
+        const copyInfo = document.getElementById('copyCountInfo');
+
+        if (!preview || !actions) return;
+
+        preview.innerHTML = section.text;
+        actions.style.display = 'flex';
+
+        const copyInfoData = this.getCopyInfo(this.currentProject, section.title);
+        if (copyInfoData && copyInfoData.contador > 0) {
+            copyInfo.textContent = `Copiado ${copyInfoData.contador}x • Última: ${copyInfoData.ultima_copia}`;
+        } else {
+            copyInfo.textContent = 'Nunca copiado';
+        }
+    }
+
+    clearPreview() {
+        const preview = document.getElementById('textPreview');
+        const actions = document.getElementById('previewActions');
+
+        if (!preview) return;
+
+        preview.innerHTML = `
+            <div class="empty-message">
+                <svg width="60" height="60" viewBox="0 0 20 20" fill="none" style="opacity: 0.3;">
+                    <path d="M1 1L19 19M1 19L19 1" stroke="currentColor" stroke-width="2"/>
+                </svg>
+                <p>Selecione uma seção ao lado para visualizar</p>
+            </div>
+        `;
+
+        if (actions) actions.style.display = 'none';
+    }
+
+    clearSelection() {
+        this.currentSection = null;
+        document.querySelectorAll('.section-card').forEach(card => {
+            card.classList.remove('active');
+        });
+        this.clearPreview();
     }
 
     renderFiles() {
-        const filesList = document.getElementById('filesList');
-        if (!this.currentProject) {
-            filesList.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">Selecione um projeto</p>';
+        const container = document.getElementById('filesList');
+        if (!container || !this.currentProject) return;
+
+        const project = this.projects[this.currentProject];
+
+        if (!project.files || project.files.length === 0) {
+            container.innerHTML = '<div class="empty-message"><p>Nenhum arquivo encontrado</p></div>';
             return;
         }
 
-        const project = this.projects[this.currentProject];
-        filesList.innerHTML = project.files.map(file => {
-            const sizeKB = (file.size / 1024).toFixed(1);
-            return `
-                <div class="file-item">
-                    <div class="file-name">📄 ${file.name}</div>
-                    <div class="file-size">${sizeKB} KB</div>
-                </div>
+        container.innerHTML = '';
+
+        // Sort files by name
+        const sortedFiles = [...project.files].sort((a, b) => a.name.localeCompare(b.name));
+
+        sortedFiles.forEach(file => {
+            const item = document.createElement('div');
+            item.className = 'file-item';
+
+            const sizeKB = (file.size / 1024).toFixed(2);
+
+            item.innerHTML = `
+                <span class="file-name">${file.name}</span>
+                <span class="file-size">${sizeKB} KB</span>
             `;
-        }).join('');
+
+            item.addEventListener('click', () => {
+                this.viewFile(file);
+            });
+
+            container.appendChild(item);
+        });
     }
 
-    updateSectionUI(sectionId) {
-        // Re-render to show updated copy status
-        this.renderSections();
-    }
-
-    // ========================================
-    // MODAL
-    // ========================================
-
-    openSectionModal(sectionId) {
-        const section = this.findSection(sectionId);
-        if (!section) return;
-
-        document.getElementById('modalSectionTitle').textContent = section.title;
-        document.getElementById('modalSectionText').textContent = section.text;
-
-        const copyInfo = this.getCopyInfo(sectionId);
-        const copyCount = document.getElementById('modalCopyCount');
-
-        if (copyInfo) {
-            const lastCopy = new Date(copyInfo.ultima_copia).toLocaleString('pt-BR');
-            copyCount.textContent = `Copiado ${copyInfo.contador}x • Última vez: ${lastCopy}`;
-        } else {
-            copyCount.textContent = 'Nunca copiado';
-        }
-
-        // Store current section for copy button
-        this.currentModalSection = section;
-
-        document.getElementById('sectionModal').classList.add('active');
-    }
-
-    closeModal() {
-        document.getElementById('sectionModal').classList.remove('active');
-        this.currentModalSection = null;
-    }
-
-    async copyCurrentSection() {
-        if (!this.currentModalSection) return;
-
-        const success = await this.copyToClipboard(
-            this.currentModalSection.text,
-            this.currentModalSection.id,
-            this.currentModalSection.title
-        );
-
-        if (success) {
-            // Update modal copy info
-            const copyInfo = this.getCopyInfo(this.currentModalSection.id);
-            const copyCount = document.getElementById('modalCopyCount');
-            const lastCopy = new Date(copyInfo.ultima_copia).toLocaleString('pt-BR');
-            copyCount.textContent = `Copiado ${copyInfo.contador}x • Última vez: ${lastCopy}`;
-        }
-    }
-
-    findSection(sectionId) {
-        if (!this.currentProject) return null;
-        const project = this.projects[this.currentProject];
-        return project.sections.find(s => s.id === sectionId);
+    viewFile(file) {
+        // Open file content in preview (could be expanded)
+        this.showToast(`Arquivo: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`, 'info');
     }
 
     // ========================================
-    // TAB MANAGEMENT
+    // TAB SWITCHING
     // ========================================
 
     switchTab(tabName) {
-        // Update buttons
         document.querySelectorAll('.tab-button').forEach(btn => {
             btn.classList.toggle('active', btn.dataset.tab === tabName);
         });
 
-        // Update content
         document.querySelectorAll('.tab-content').forEach(content => {
-            content.classList.remove('active');
+            content.classList.toggle('active', content.id === `${tabName}Tab`);
         });
-        document.getElementById(`${tabName}Tab`).classList.add('active');
+    }
+
+    // ========================================
+    // COPY FUNCTIONALITY
+    // ========================================
+
+    async copyCurrentSection() {
+        if (!this.currentSection || !this.currentProject) return;
+
+        try {
+            await navigator.clipboard.writeText(this.currentSection.text);
+            this.recordCopy(this.currentProject, this.currentSection.title);
+            this.showToast('✅ Texto copiado!', 'success');
+            this.renderSections(); // Update green checkmark
+            this.showPreview(this.currentSection); // Update copy count
+        } catch (err) {
+            console.error('Erro ao copiar:', err);
+            this.showToast('Erro ao copiar texto', 'error');
+        }
+    }
+
+    async copyToClipboard(text) {
+        try {
+            await navigator.clipboard.writeText(text);
+            this.showToast('✅ Copiado!', 'success');
+        } catch (err) {
+            console.error('Erro ao copiar:', err);
+            this.showToast('Erro ao copiar', 'error');
+        }
+    }
+
+    saveCurrentSection() {
+        if (!this.currentSection) return;
+
+        const blob = new Blob([this.currentSection.text], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${this.currentSection.title.replace(/[^a-z0-9]/gi, '_')}.txt`;
+        a.click();
+        URL.revokeObjectURL(url);
+
+        this.showToast('Arquivo salvo!', 'success');
+    }
+
+    // ========================================
+    // COPY HISTORY
+    // ========================================
+
+    loadHistory() {
+        const saved = localStorage.getItem('copyHistory');
+        return saved ? JSON.parse(saved) : {};
+    }
+
+    saveHistory() {
+        localStorage.setItem('copyHistory', JSON.stringify(this.copyHistory));
+    }
+
+    recordCopy(projectName, sectionTitle) {
+        if (!this.copyHistory[projectName]) {
+            this.copyHistory[projectName] = {};
+        }
+
+        const now = new Date().toLocaleString('pt-BR');
+
+        if (!this.copyHistory[projectName][sectionTitle]) {
+            this.copyHistory[projectName][sectionTitle] = {
+                primeira_copia: now,
+                ultima_copia: now,
+                contador: 1
+            };
+        } else {
+            this.copyHistory[projectName][sectionTitle].ultima_copia = now;
+            this.copyHistory[projectName][sectionTitle].contador++;
+        }
+
+        this.saveHistory();
+    }
+
+    getCopyInfo(projectName, sectionTitle) {
+        return this.copyHistory[projectName]?.[sectionTitle] || null;
     }
 
     // ========================================
     // YOUTUBE DATA
     // ========================================
 
+    loadYoutubeData() {
+        const saved = localStorage.getItem('youtubeData');
+        return saved ? JSON.parse(saved) : {};
+    }
+
+    saveYoutubeDataToStorage() {
+        localStorage.setItem('youtubeData', JSON.stringify(this.youtubeData));
+    }
+
+    loadYoutubeDataForProject(projectName) {
+        const data = this.youtubeData[projectName] || {};
+
+        document.getElementById('videoPostedCheckbox').checked = data.posted || false;
+        document.getElementById('title1').value = data.title1 || '';
+        document.getElementById('title2').value = data.title2 || '';
+        document.getElementById('title3').value = data.title3 || '';
+        document.getElementById('title4').value = data.title4 || '';
+        document.getElementById('title5').value = data.title5 || '';
+        document.getElementById('description').value = data.description || '';
+        document.getElementById('thumbnail').value = data.thumbnail || '';
+    }
+
     saveYoutubeData() {
         if (!this.currentProject) return;
 
-        const youtubeData = {
-            titles: document.getElementById('titles').value,
+        this.youtubeData[this.currentProject] = {
+            posted: document.getElementById('videoPostedCheckbox').checked,
+            title1: document.getElementById('title1').value,
+            title2: document.getElementById('title2').value,
+            title3: document.getElementById('title3').value,
+            title4: document.getElementById('title4').value,
+            title5: document.getElementById('title5').value,
             description: document.getElementById('description').value,
             thumbnail: document.getElementById('thumbnail').value,
-            status: document.querySelector('.status-btn.active')?.dataset.status || 'new'
+            lastUpdated: new Date().toLocaleString('pt-BR')
         };
 
-        this.projects[this.currentProject].youtubeData = youtubeData;
-        this.saveToLocalStorage();
-        this.showToast('Informações salvas!', 'success');
+        this.saveYoutubeDataToStorage();
+        this.showToast('✅ Dados do YouTube salvos!', 'success');
     }
 
     // ========================================
-    // STORAGE
+    // LOCAL STORAGE
     // ========================================
 
     saveToLocalStorage() {
         try {
-            localStorage.setItem('scriptCopier_projects', JSON.stringify(this.projects));
-        } catch (e) {
-            console.error('Erro ao salvar:', e);
+            const data = {
+                projects: this.projects,
+                currentProject: this.currentProject,
+                timestamp: Date.now()
+            };
+
+            // Save with size check
+            const jsonStr = JSON.stringify(data);
+            if (jsonStr.length > 5000000) { // 5MB limit
+                this.showToast('⚠️ Dados muito grandes. Alguns projetos não foram salvos.', 'error');
+                return;
+            }
+
+            localStorage.setItem('scriptCopierData', jsonStr);
+        } catch (err) {
+            console.error('Erro ao salvar:', err);
+            this.showToast('Erro ao salvar dados localmente', 'error');
         }
     }
 
     loadFromLocalStorage() {
         try {
-            const saved = localStorage.getItem('scriptCopier_projects');
-            if (saved) {
-                this.projects = JSON.parse(saved);
-                this.renderProjects();
+            const saved = localStorage.getItem('scriptCopierData');
+            if (!saved) return;
+
+            const data = JSON.parse(saved);
+            this.projects = data.projects || {};
+            this.currentProject = data.currentProject || null;
+
+            if (Object.keys(this.projects).length > 0) {
+                this.renderProjectDropdown();
+                if (this.currentProject && this.projects[this.currentProject]) {
+                    this.selectProject(this.currentProject);
+                }
             }
-        } catch (e) {
-            console.error('Erro ao carregar:', e);
-        }
-    }
-
-    saveHistory() {
-        try {
-            localStorage.setItem('scriptCopier_history', JSON.stringify(this.copyHistory));
-        } catch (e) {
-            console.error('Erro ao salvar histórico:', e);
-        }
-    }
-
-    loadHistory() {
-        try {
-            const saved = localStorage.getItem('scriptCopier_history');
-            return saved ? JSON.parse(saved) : {};
-        } catch (e) {
-            console.error('Erro ao carregar histórico:', e);
-            return {};
+        } catch (err) {
+            console.error('Erro ao carregar:', err);
         }
     }
 
@@ -738,6 +785,8 @@ class ScriptCopierApp {
 
     showToast(message, type = 'info') {
         const toast = document.getElementById('toast');
+        if (!toast) return;
+
         toast.textContent = message;
         toast.className = `toast ${type}`;
         toast.classList.add('show');
@@ -749,19 +798,10 @@ class ScriptCopierApp {
 }
 
 // ========================================
-// GLOBAL FUNCTIONS (for onclick handlers)
-// ========================================
-
-function closeModal() {
-    app.closeModal();
-}
-
-// ========================================
-// INITIALIZE APP
+// Initialize App
 // ========================================
 
 let app;
 document.addEventListener('DOMContentLoaded', () => {
     app = new ScriptCopierApp();
-    console.log('Script Copier Web initialized ✓');
 });
