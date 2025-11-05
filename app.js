@@ -6,7 +6,7 @@
 
 class ScriptCopierApp {
     constructor() {
-        console.log('🚀 Script Copier v2.7.5 - hasMarkers() melhorado para detectar mais padrões de seções');
+        console.log('🚀 Script Copier v2.7.6 - parseSections() atualizado para detectar divisões naturais com : ou -');
 
         // Nova estrutura: múltiplas pastas raiz
         this.rootFolders = []; // Array de {id, name, handle, projects}
@@ -639,13 +639,28 @@ class ScriptCopierApp {
     parseSections(content, fileName) {
         const sections = [];
         const patterns = [
-            { regex: /^OPENING\s*[-–]?\s*(.*)$/gmi, type: 'OPENING' },
+            { regex: /^OPENING\s*[-–:]?\s*(.*)$/gmi, type: 'OPENING' },
             { regex: /^HOOK\s*\((.+?)\).*$/gmi, type: 'HOOK' },
-            { regex: /^(ATO|ACT)\s+([IVXLCDM]+|ONE|TWO|THREE|FOUR|FIVE|SIX|SEVEN|EIGHT|NINE|TEN)\s*[-–]\s*(.+?)(?:\s*▓▓▓)?$/gmi, type: 'ATO' },
-            { regex: /^CHAPTER\s+(ONE|TWO|THREE|FOUR|FIVE|SIX|SEVEN|EIGHT|NINE|TEN|\w+)\s*[-–]\s*(.+?)$/gmi, type: 'CHAPTER' },
-            { regex: /^(CONCLUS[ÃA]O|CONCLUSION)\s*[-–]?\s*(.*)(?:\s*▓▓▓)?$/gmi, type: 'CONCLUSÃO' },
-            { regex: /^SCENE\s+\d+\s*[-–]\s*(.+)$/gmi, type: 'SCENE' },
-            { regex: /^CENA\s+\d+\s*[-–]\s*(.+)$/gmi, type: 'CENA' }
+
+            // ACT/ATO com números romanos ou por extenso - aceita : ou -
+            { regex: /^(ATO|ACT)\s+([IVXLCDM]+|ONE|TWO|THREE|FOUR|FIVE|SIX|SEVEN|EIGHT|NINE|TEN)\s*[-–:]\s*(.+?)(?:\s*▓▓▓)?$/gmi, type: 'ATO' },
+
+            // ACT/ATO com números arábicos - aceita : ou -
+            { regex: /^(ATO|ACT)\s+(\d+)\s*[-–:]\s*(.+?)(?:\s*▓▓▓)?$/gmi, type: 'ATO' },
+
+            // CHAPTER com palavras ou números - aceita : ou -
+            { regex: /^CHAPTER\s+(ONE|TWO|THREE|FOUR|FIVE|SIX|SEVEN|EIGHT|NINE|TEN|\d+|\w+)\s*[-–:]\s*(.+?)$/gmi, type: 'CHAPTER' },
+
+            // CAPÍTULO com números - aceita : ou -
+            { regex: /^CAP[ÍI]TULO\s+(\d+)\s*[-–:]\s*(.+?)$/gmi, type: 'CAPÍTULO' },
+
+            // PART/PARTE com números - aceita : ou -
+            { regex: /^PART\s+(\d+)\s*[-–:]\s*(.+?)$/gmi, type: 'PART' },
+            { regex: /^PARTE\s+(\d+)\s*[-–:]\s*(.+?)$/gmi, type: 'PARTE' },
+
+            { regex: /^(CONCLUS[ÃA]O|CONCLUSION)\s*[-–:]?\s*(.*)(?:\s*▓▓▓)?$/gmi, type: 'CONCLUSÃO' },
+            { regex: /^SCENE\s+\d+\s*[-–:]\s*(.+)$/gmi, type: 'SCENE' },
+            { regex: /^CENA\s+\d+\s*[-–:]\s*(.+)$/gmi, type: 'CENA' }
         ];
 
         const lines = content.split('\n');
