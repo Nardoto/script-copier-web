@@ -168,6 +168,11 @@ class ScriptCopierApp {
             this.testGeminiConnection();
         });
 
+        // AI Section Detector - Copy Tab
+        document.getElementById('divideWithAIButton')?.addEventListener('click', () => {
+            this.divideSelectedFileWithAI();
+        });
+
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
@@ -840,6 +845,34 @@ class ScriptCopierApp {
         this.loadYoutubeDataForProject(projectName);
         this.clearPreview();
         this.clearFilePreview();
+        this.populateAIFileSelector();
+    }
+
+    populateAIFileSelector() {
+        const selector = document.getElementById('aiFileSelector');
+        const panel = document.getElementById('aiSectionDetectorPanel');
+
+        if (!selector || !panel || !this.currentProject) return;
+
+        const project = this.projects[this.currentProject];
+        if (!project || !project.files || project.files.length === 0) {
+            panel.style.display = 'none';
+            return;
+        }
+
+        // Mostrar painel
+        panel.style.display = 'block';
+
+        // Limpar dropdown
+        selector.innerHTML = '<option value="">Selecione um arquivo...</option>';
+
+        // Adicionar arquivos
+        project.files.forEach((file, index) => {
+            const option = document.createElement('option');
+            option.value = index;
+            option.textContent = file.name;
+            selector.appendChild(option);
+        });
     }
 
     renderSections() {
@@ -1571,7 +1604,7 @@ class ScriptCopierApp {
         this.showToast('🤖 Analisando arquivo com IA...', 'info');
 
         const prompt = `
-Analise este roteiro de documentário bíblico e identifique as seções principais.
+Analise este roteiro de documentário bíblico e identifique TODAS as seções principais.
 
 Retorne APENAS um JSON válido no formato:
 {
@@ -1590,10 +1623,11 @@ Retorne APENAS um JSON válido no formato:
 }
 
 Regras:
-- Identifique mudanças de tema, introdução/desenvolvimento/conclusão
+- Identifique TODAS as mudanças de tema, introdução/desenvolvimento/conclusão
 - startLine e endLine são números de linha (começando do 0)
-- Máximo de 5 seções
+- NÃO limite o número de seções - identifique quantas forem necessárias
 - Seja conciso nos resumos
+- Cada seção deve representar uma divisão lógica e natural do conteúdo
 
 ARQUIVO "${file.name}":
 ${file.content}
@@ -1736,6 +1770,41 @@ ${file.content}
             this.renderSections();
             this.showToast(`✅ ${analysis.sections.length} seção(ões) aplicadas com sucesso!`, 'success');
         }
+    }
+
+    // Dividir arquivo selecionado com IA (Copy Tab)
+    async divideSelectedFileWithAI() {
+        const selector = document.getElementById('aiFileSelector');
+
+        if (!selector || !selector.value) {
+            this.showToast('⚠️ Selecione um arquivo primeiro', 'error');
+            return;
+        }
+
+        if (!this.currentProject) {
+            this.showToast('⚠️ Nenhum projeto selecionado', 'error');
+            return;
+        }
+
+        const project = this.projects[this.currentProject];
+        const fileIndex = parseInt(selector.value);
+        const file = project.files[fileIndex];
+
+        if (!file) {
+            this.showToast('⚠️ Arquivo não encontrado', 'error');
+            return;
+        }
+
+        // Verificar se já tem marcadores
+        if (this.hasMarkers(file.content)) {
+            const confirmed = confirm(
+                `O arquivo "${file.name}" já possui marcadores de seção.\n\nDeseja substituir pelas divisões da IA?`
+            );
+            if (!confirmed) return;
+        }
+
+        // Chamar análise da IA
+        await this.analyzeFileWithAI(file);
     }
 
     // ========================================

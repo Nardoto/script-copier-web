@@ -145,12 +145,40 @@
                     <div class="two-column-layout">
                         <!-- Coluna Esquerda: Lista de Seções -->
                         <div class="sections-column">
-                            <h3 class="column-title">
-                                <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
-                                    <path d="M4 6H16M4 10H16M4 14H10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                </svg>
-                                SEÇÕES DO ROTEIRO
-                            </h3>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                                <h3 class="column-title" style="margin-bottom: 0;">
+                                    <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+                                        <path d="M4 6H16M4 10H16M4 14H10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                    </svg>
+                                    SEÇÕES DO ROTEIRO
+                                </h3>
+                            </div>
+
+                            <!-- AI Section Detector -->
+                            <div id="aiSectionDetectorPanel" style="display: none; margin-bottom: 1rem; padding: 1rem; background: linear-gradient(135deg, #667eea22 0%, #764ba222 100%); border-radius: var(--radius-sm); border: 2px dashed #667eea;">
+                                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#667eea" stroke-width="2">
+                                        <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                                        <path d="M2 17l10 5 10-5"/>
+                                        <path d="M2 12l10 5 10-5"/>
+                                    </svg>
+                                    <h4 style="margin: 0; color: #667eea; font-weight: 600;">Dividir Arquivo com IA</h4>
+                                </div>
+
+                                <select id="aiFileSelector" class="root-folder-dropdown" style="width: 100%; margin-bottom: 0.75rem;">
+                                    <option value="">Selecione um arquivo...</option>
+                                </select>
+
+                                <button id="divideWithAIButton" class="btn-primary" style="width: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                                        <path d="M2 17l10 5 10-5"/>
+                                        <path d="M2 12l10 5 10-5"/>
+                                    </svg>
+                                    Dividir com IA
+                                </button>
+                            </div>
+
                             <div id="sectionsList" class="sections-list">
                                 <div class="empty-message">
                                     <p>Selecione um roteiro para visualizar as seções</p>
