@@ -1,12 +1,12 @@
 // ========================================
 // SCRIPT COPIER WEB - Desktop Layout
 // Portado de ScriptCopier_UNIVERSAL.py
-// Version: 2.8.5 - Correção: título do modal de progresso agora mostra contexto correto
+// Version: 2.8.6 - Contador de palavras e caracteres na comparação de tradução
 // ========================================
 
 class ScriptCopierApp {
     constructor() {
-        console.log('🚀 Script Copier v2.8.5 - Título do modal de progresso corrigido');
+        console.log('🚀 Script Copier v2.8.6 - Contador de palavras e caracteres adicionado');
 
         // Nova estrutura: múltiplas pastas raiz
         this.rootFolders = []; // Array de {id, name, handle, projects}
@@ -1900,6 +1900,19 @@ TRADUÇÃO FIEL PARA ${targetLanguage.toUpperCase()}:
             return div.innerHTML;
         };
 
+        // Calcular estatísticas
+        const originalWords = originalText.trim().split(/\s+/).length;
+        const originalChars = originalText.length;
+        const translatedWords = translatedText.trim().split(/\s+/).length;
+        const translatedChars = translatedText.length;
+
+        // Calcular diferença percentual
+        const wordsDiff = ((translatedWords - originalWords) / originalWords * 100).toFixed(1);
+        const charsDiff = ((translatedChars - originalChars) / originalChars * 100).toFixed(1);
+
+        const wordsColor = Math.abs(wordsDiff) > 10 ? '#f59e0b' : '#10b981';
+        const charsColor = Math.abs(charsDiff) > 10 ? '#f59e0b' : '#10b981';
+
         modal.innerHTML = `
             <div class="modal-content" style="max-width: 1200px; width: 90%;">
                 <div class="modal-header">
@@ -1920,8 +1933,20 @@ TRADUÇÃO FIEL PARA ${targetLanguage.toUpperCase()}:
                             <h4 style="color: var(--accent-primary); margin: 0 0 0.75rem 0; padding-bottom: 0.5rem; border-bottom: 2px solid var(--accent-primary);">
                                 📝 Original
                             </h4>
-                            <div id="originalTextScroll" style="background: var(--bg-hover); padding: 1.5rem; border-radius: var(--radius-sm); max-height: 400px; overflow-y: auto;">
+                            <div id="originalTextScroll" style="background: var(--bg-hover); padding: 1.5rem; border-radius: var(--radius-sm); max-height: 400px; overflow-y: auto; margin-bottom: 0.75rem;">
                                 <pre id="originalTextContent" style="margin: 0; white-space: pre-wrap; font-family: 'Inter', sans-serif; line-height: 1.6; color: var(--text-primary); font-size: 0.9rem;">${escapeHtml(originalText)}</pre>
+                            </div>
+                            <!-- Estatísticas Original -->
+                            <div style="display: flex; gap: 1rem; padding: 0.75rem; background: var(--bg-hover); border-radius: var(--radius-sm); font-size: 0.85rem;">
+                                <div style="flex: 1; text-align: center;">
+                                    <div style="color: var(--text-secondary); margin-bottom: 0.25rem;">Palavras</div>
+                                    <div style="font-weight: 600; color: var(--accent-primary); font-size: 1.1rem;">${originalWords.toLocaleString()}</div>
+                                </div>
+                                <div style="width: 1px; background: var(--border-color);"></div>
+                                <div style="flex: 1; text-align: center;">
+                                    <div style="color: var(--text-secondary); margin-bottom: 0.25rem;">Caracteres</div>
+                                    <div style="font-weight: 600; color: var(--accent-primary); font-size: 1.1rem;">${originalChars.toLocaleString()}</div>
+                                </div>
                             </div>
                         </div>
 
@@ -1930,8 +1955,30 @@ TRADUÇÃO FIEL PARA ${targetLanguage.toUpperCase()}:
                             <h4 style="color: #667eea; margin: 0 0 0.75rem 0; padding-bottom: 0.5rem; border-bottom: 2px solid #667eea;">
                                 🌐 ${escapeHtml(language)}
                             </h4>
-                            <div id="translatedTextScroll" style="background: linear-gradient(135deg, #667eea11 0%, #764ba211 100%); padding: 1.5rem; border-radius: var(--radius-sm); max-height: 400px; overflow-y: auto; border: 2px solid #667eea;">
+                            <div id="translatedTextScroll" style="background: linear-gradient(135deg, #667eea11 0%, #764ba211 100%); padding: 1.5rem; border-radius: var(--radius-sm); max-height: 400px; overflow-y: auto; border: 2px solid #667eea; margin-bottom: 0.75rem;">
                                 <pre id="translatedTextContent" style="margin: 0; white-space: pre-wrap; font-family: 'Inter', sans-serif; line-height: 1.6; color: var(--text-primary); font-size: 0.9rem;">${escapeHtml(translatedText)}</pre>
+                            </div>
+                            <!-- Estatísticas Tradução -->
+                            <div style="display: flex; gap: 1rem; padding: 0.75rem; background: linear-gradient(135deg, #667eea11 0%, #764ba211 100%); border-radius: var(--radius-sm); border: 1px solid #667eea; font-size: 0.85rem;">
+                                <div style="flex: 1; text-align: center;">
+                                    <div style="color: var(--text-secondary); margin-bottom: 0.25rem;">Palavras</div>
+                                    <div style="font-weight: 600; color: #667eea; font-size: 1.1rem;">
+                                        ${translatedWords.toLocaleString()}
+                                        <span style="font-size: 0.75rem; color: ${wordsColor}; margin-left: 0.25rem;">
+                                            (${wordsDiff > 0 ? '+' : ''}${wordsDiff}%)
+                                        </span>
+                                    </div>
+                                </div>
+                                <div style="width: 1px; background: #667eea33;"></div>
+                                <div style="flex: 1; text-align: center;">
+                                    <div style="color: var(--text-secondary); margin-bottom: 0.25rem;">Caracteres</div>
+                                    <div style="font-weight: 600; color: #667eea; font-size: 1.1rem;">
+                                        ${translatedChars.toLocaleString()}
+                                        <span style="font-size: 0.75rem; color: ${charsColor}; margin-left: 0.25rem;">
+                                            (${charsDiff > 0 ? '+' : ''}${charsDiff}%)
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
