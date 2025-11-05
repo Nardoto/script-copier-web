@@ -1,12 +1,12 @@
 // ========================================
 // SCRIPT COPIER WEB - Desktop Layout
 // Portado de ScriptCopier_UNIVERSAL.py
-// Version: 2.8.3 - Tradutor COMPLETO: scroll sincronizado, navegação entre seções, tradução de arquivo completo
+// Version: 2.8.4 - Correção: tradução de arquivo completo agora funciona corretamente
 // ========================================
 
 class ScriptCopierApp {
     constructor() {
-        console.log('🚀 Script Copier v2.8.3 - Tradutor completo com scroll sincronizado e arquivo completo');
+        console.log('🚀 Script Copier v2.8.4 - Tradução de arquivo completo corrigida');
 
         // Nova estrutura: múltiplas pastas raiz
         this.rootFolders = []; // Array de {id, name, handle, projects}
@@ -2059,7 +2059,7 @@ TRADUÇÃO FIEL PARA ${targetLanguage.toUpperCase()}:
 
     async translateEntireFile() {
         // Verificar se há arquivo selecionado
-        if (!this.currentFileHandle) {
+        if (!this.currentFile) {
             this.showToast('⚠️ Selecione um arquivo primeiro', 'error');
             return;
         }
@@ -2089,9 +2089,8 @@ TRADUÇÃO FIEL PARA ${targetLanguage.toUpperCase()}:
 
         const targetLanguage = languageMap[languageSelector.value];
 
-        // Ler conteúdo do arquivo
-        const file = await this.currentFileHandle.getFile();
-        const fileContent = await file.text();
+        // Usar conteúdo do arquivo já carregado
+        const fileContent = this.currentFile.content;
 
         if (!fileContent || fileContent.trim().length === 0) {
             this.showToast('⚠️ O arquivo está vazio', 'error');
@@ -2100,7 +2099,7 @@ TRADUÇÃO FIEL PARA ${targetLanguage.toUpperCase()}:
 
         // Mostrar barra de progresso
         this.showAIProgressModal({
-            name: this.currentFileHandle.name,
+            name: this.currentFile.name,
             content: fileContent.substring(0, 500) + '...'
         });
         this.updateAIProgress('Preparando tradução do arquivo completo...', 10);
@@ -2182,7 +2181,7 @@ TRADUÇÃO FIEL COMPLETA PARA ${targetLanguage.toUpperCase()}:
             setTimeout(() => {
                 this.closeAIProgressModal();
                 this.showTranslationResult(
-                    this.currentFileHandle.name,
+                    this.currentFile.name,
                     targetLanguage,
                     fileContent,
                     translatedText
